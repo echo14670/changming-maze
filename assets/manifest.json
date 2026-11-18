@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "project": "长明：雾海迷宫",
+  "owner": "B",
+  "generatedAt": "2026-11-17",
+  "runtimeSource": "assets/manifest.js",
+  "dependency": {
+    "three": {
+      "version": "0.187.0",
+      "license": "MIT"
+    }
+  },
+  "assets": [
+    { "id": "texture.stone", "type": "procedural-texture", "source": "src/world/materials.js", "license": "project-original" },
+    { "id": "texture.moss-stone", "type": "procedural-texture", "source": "src/world/materials.js", "license": "project-original" },
+    { "id": "texture.brick", "type": "procedural-texture", "source": "src/world/materials.js", "license": "project-original" },
+    { "id": "texture.marble", "type": "procedural-texture", "source": "src/world/materials.js", "license": "project-original" },
+    { "id": "texture.wood", "type": "procedural-texture", "source": "src/world/materials.js", "license": "project-original" },
+    { "id": "model.obelisk", "type": "procedural-geometry", "source": "src/world/landmarks.js", "license": "project-original", "overridePolicy": "base64-glb" },
+    { "id": "model.sentinel", "type": "procedural-geometry", "source": "src/world/landmarks.js", "license": "project-original", "overridePolicy": "base64-glb" },
+    { "id": "model.crate", "type": "procedural-geometry", "source": "src/world/landmarks.js", "license": "project-original", "overridePolicy": "base64-glb" },
+    { "id": "model.broken-hull", "type": "procedural-geometry", "source": "src/world/island.js", "license": "project-original", "overridePolicy": "base64-glb" }
+  ]
+}

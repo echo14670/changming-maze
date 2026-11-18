@@ -5,11 +5,17 @@ import * as THREE from 'three'
  * 仅用于 11.18–11.19 的引擎验收；正式玩家控制器由 game/player 接管。
  */
 export function createCameraRig(options) {
-  const { camera, input } = options
+  const {
+    camera,
+    input,
+    collisionWorld: initialCollisionWorld,
+    getGroundHeight,
+    initialPosition,
+  } = options
   if (!camera) throw new Error('createCameraRig: camera is required')
   if (!input) throw new Error('createCameraRig: input is required')
 
-  const position = new THREE.Vector3(0, 1.6, 8)
+  const position = new THREE.Vector3(0, 1.62, 8)
   const euler = new THREE.Euler(0, 0, 0, 'YXZ')
   const move = new THREE.Vector3()
   const forward = new THREE.Vector3()
@@ -20,6 +26,16 @@ export function createCameraRig(options) {
   let enabled = true
   let walkSpeed = 2.2
   let runSpeed = 4.0
+  let playerRadius = 0.35
+  let collisionWorld = initialCollisionWorld || null
+
+  if (initialPosition) {
+    position.set(
+      Number(initialPosition.x) || 0,
+      Number(initialPosition.y) || 1.62,
+      Number(initialPosition.z) || 0,
+    )
+  }
 
   camera.rotation.order = 'YXZ'
   camera.position.copy(position)
@@ -45,12 +61,28 @@ export function createCameraRig(options) {
     if (move.lengthSq() > 0) {
       move.normalize()
       const speed = input.isDown('ShiftLeft') || input.isDown('ShiftRight') ? runSpeed : walkSpeed
-      position.addScaledVector(move, speed * dt)
-      position.x = Math.max(-36, Math.min(36, position.x))
-      position.z = Math.max(-36, Math.min(36, position.z))
+      const dx = move.x * speed * dt
+      const dz = move.z * speed * dt
+      if (collisionWorld?.resolveMovement) {
+        const result = collisionWorld.resolveMovement(
+          position.x,
+          position.z,
+          dx,
+          dz,
+          playerRadius,
+        )
+        position.x = result.x
+        position.z = result.z
+      } else {
+        position.addScaledVector(move, speed * dt)
+        position.x = Math.max(-36, Math.min(36, position.x))
+        position.z = Math.max(-36, Math.min(36, position.z))
+      }
     }
 
-    position.y = 1.6
+    position.y =
+      (typeof getGroundHeight === 'function' ? getGroundHeight(position.x, position.z) : 0) +
+      1.62
     camera.position.copy(position)
     euler.set(pitch, yaw, 0)
     camera.quaternion.setFromEuler(euler)
@@ -62,7 +94,9 @@ export function createCameraRig(options) {
     } else if (value && typeof value === 'object') {
       position.set(Number(value.x) || 0, Number(value.y) || 1.6, Number(value.z) || 0)
     }
-    position.y = 1.6
+    position.y =
+      (typeof getGroundHeight === 'function' ? getGroundHeight(position.x, position.z) : 0) +
+      1.62
     camera.position.copy(position)
   }
 
@@ -85,6 +119,10 @@ export function createCameraRig(options) {
     enabled = Boolean(value)
   }
 
+  function setCollisionWorld(nextWorld) {
+    collisionWorld = nextWorld || null
+  }
+
   return {
     update,
     setPosition,
@@ -92,6 +130,7 @@ export function createCameraRig(options) {
     setLook,
     getLook,
     setEnabled,
+    setCollisionWorld,
     get enabled() {
       return enabled
     },

@@ -75,10 +75,64 @@ async function runBrowser(config) {
     const afterTeleport = await page.evaluate(() => window.changming.getState())
     assert(Math.abs(afterTeleport.camera.position.x - 2) < 0.01, 'teleport 后 camera.x 不正确')
 
+    let collectedBefore = 0
+    for (let index = 0; index < 3; index += 1) {
+      const teleported = await page.evaluate((seedIndex) => window.changming.teleportToSeed(seedIndex), index)
+      assert(teleported === true, `teleportToSeed(${index}) 未生效`)
+      await page.waitForFunction(
+        () => window.changming.getDiagnostics().focus?.type === 'seed',
+        null,
+        { timeout: 5000 },
+      )
+      const focus = await page.evaluate(() => window.changming.getDiagnostics().focus)
+      assert(focus.type === 'seed', `火种 ${index + 1} 没有进入 focus`)
+      const promptVisible = await page.locator('#interaction-prompt').evaluate((element) =>
+        element.classList.contains('is-visible'),
+      )
+      assert(promptVisible, `火种 ${index + 1} 没有显示 E 键提示`)
+
+      if (index === 0) {
+        await page.screenshot({ path: path.join(SHOT_DIR, `fire-seed-focus-${config.name.toLowerCase()}.png`) })
+      }
+      await page.keyboard.press('e')
+      await page.waitForFunction(
+        (expected) => window.changming.getState().collected === expected,
+        collectedBefore + 1,
+        { timeout: 3000 },
+      )
+      collectedBefore += 1
+    }
+
+    const afterPickup = await page.evaluate(() => window.changming.getState())
+    assert(afterPickup.collected === 3, '拾取三枚火种后 collected 不为 3')
+    assert(afterPickup.gateUnlocked === true, '集齐火种后大门未解锁')
+    assert(afterPickup.seedIds.length === 3, 'seedIds 数量不正确')
+
+    const doorTeleported = await page.evaluate(() => window.changming.teleport([0, 1.62, 6.2]))
+    assert(doorTeleported === true, '传送到灯塔大门失败')
+    await page.waitForFunction(
+      () => window.changming.getDiagnostics().focus?.type === 'gate',
+      null,
+      { timeout: 5000 },
+    )
+    await page.keyboard.press('e')
+    await page.waitForTimeout(250)
+
     await page.screenshot({ path: path.join(SHOT_DIR, `engine-smoke-${config.name.toLowerCase()}.png`) })
     assert(errors.length === 0, '控制台存在错误：' + errors.join(' | '))
 
-    return { name: config.name, passed: true, diagnostics, errors }
+    const finalState = await page.evaluate(() => window.changming.getState())
+    return {
+      name: config.name,
+      passed: true,
+      diagnostics,
+      pickup: {
+        collected: finalState.collected,
+        seedIds: finalState.seedIds,
+        gateUnlocked: finalState.gateUnlocked,
+      },
+      errors,
+    }
   } finally {
     await browser.close()
   }

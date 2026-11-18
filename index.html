@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark">
   <title>长明：雾海迷宫</title>
+  <link rel="stylesheet" href="./src/ui/hud.css">
   <style>
     :root {
       --night: #0b1a24;
@@ -57,13 +58,58 @@
       line-height: 1.9;
       letter-spacing: 0.06em;
     }
+    #hud {
+      opacity: 0;
+      transition: opacity 0.7s ease;
+    }
+    body[data-ready="true"] #hud {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
   <canvas id="scene" aria-label="长明：雾海迷宫场景"></canvas>
   <div class="placeholder">
     <h1>长明</h1>
-    <p>雾海迷宫 · 引擎骨架运行中<br>WebGL2 / three.js · 计算机图形学综合实验四</p>
+    <p>雾海迷宫 · 正在进入石阵<br>WebGL2 / three.js · 计算机图形学综合实验四</p>
+  </div>
+  <div id="hud">
+    <div class="hud-brand">
+      <span class="hud-brand-mark">长</span>
+      <span class="hud-brand-copy">
+        <strong>雾海石阵</strong>
+        <small>THE LONG LIGHT</small>
+      </span>
+    </div>
+    <div class="hud-region">
+      <strong id="region-name">外庭</strong>
+      <span>环塔石阵</span>
+    </div>
+    <div class="hud-objective">
+      <span class="hud-objective-label">火种</span>
+      <span class="hud-objective-count"><b id="ember-count">0</b>/3</span>
+      <span class="hud-ember-dots" aria-hidden="true">
+        <i data-ember-dot></i><i data-ember-dot></i><i data-ember-dot></i>
+      </span>
+      <small>寻找散落的余烬</small>
+    </div>
+    <div id="crosshair" aria-hidden="true"></div>
+    <div id="interaction-prompt" role="status" aria-live="polite">
+      <kbd id="interaction-key">E</kbd>
+      <span class="interaction-copy">
+        <strong id="interaction-title">拾取火种</strong>
+        <span id="interaction-detail">距离 0.0 m</span>
+      </span>
+    </div>
+    <div id="interaction-guide" role="status" aria-live="polite"></div>
+    <div id="toast" role="status" aria-live="polite">
+      <strong id="toast-title"></strong>
+      <span id="toast-detail"></span>
+    </div>
+    <div class="hud-controls">
+      <span><kbd>WASD</kbd>移动 <kbd>鼠标</kbd>环视 <kbd>Shift</kbd>快走</span>
+      <span class="hud-note"><kbd>E</kbd>拾取火种 / 操作大门</span>
+    </div>
   </div>
   <script
     src="./dist/bundle.js"

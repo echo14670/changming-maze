@@ -3,7 +3,7 @@
  * 供 Playwright、答辩排查和调试使用；不参与正常玩法。
  */
 export function createDiagnostics(options) {
-  const { state, renderer, cameraRig, events } = options
+  const { state, renderer, cameraRig, events, interaction, fireSeeds, world } = options
   if (!state) throw new Error('createDiagnostics: state is required')
   if (!renderer) throw new Error('createDiagnostics: renderer is required')
 
@@ -12,6 +12,14 @@ export function createDiagnostics(options) {
       ...state,
       seedIds: [...state.seedIds],
       checkpoint: { ...state.checkpoint },
+      focus: interaction?.getFocus?.() || null,
+      seeds:
+        fireSeeds?.seeds?.map((seed) => ({
+          id: seed.id,
+          region: seed.region,
+          collected: seed.collected,
+          grid: { ...seed.grid },
+        })) || [],
       camera: cameraRig
         ? { position: cameraRig.getPosition(), look: cameraRig.getLook() }
         : null,
@@ -29,18 +37,36 @@ export function createDiagnostics(options) {
       return true
     }
     if (target && typeof target === 'object' && 'col' in target && 'row' in target) {
-      console.warn('[changming] teleport({col,row}) 需要迷宫模块接入后才能使用；当前请传 {x,y,z}')
-      return false
+      const position = world?.maze?.cells?.[target.row]?.[target.col]
+      if (!position) {
+        console.warn('[changming] teleport({col,row}) 超出迷宫范围')
+        return false
+      }
+      const center = world?.cellToWorld?.(target.row, target.col)
+      if (!center) return false
+      cameraRig.setPosition([center.x, 1.62, center.z])
+      return true
     }
     return false
   }
 
   function giveSeeds(count = 3) {
     const amount = Math.max(0, Math.min(3, Number(count) || 0))
-    state.collected = amount
-    state.seedIds = Array.from({ length: amount }, (_, index) => `seed-${index + 1}`)
-    if (amount >= 3) state.gateUnlocked = true
+    if (interaction && fireSeeds) {
+      for (let index = 0; index < amount; index += 1) {
+        const seed = fireSeeds.seeds[index]
+        if (seed) interaction.collectSeed(seed.id)
+      }
+    } else {
+      state.collected = amount
+      state.seedIds = Array.from({ length: amount }, (_, index) => `seed-${index + 1}`)
+      if (amount >= 3) state.gateUnlocked = true
+    }
     return state.collected
+  }
+
+  function teleportToSeed(index = 0) {
+    return interaction?.teleportToSeed?.(Number(index) || 0) || false
   }
 
   function openGate() {
@@ -80,6 +106,10 @@ export function createDiagnostics(options) {
       collected: state.collected,
       gateUnlocked: state.gateUnlocked,
       quality: state.quality,
+      focus: interaction?.getFocus?.() || null,
+      remainingSeeds: fireSeeds
+        ? fireSeeds.getActive().length
+        : Math.max(0, 3 - state.collected),
       screenshotReady: document.body.dataset.ready === 'true',
     }
   }
@@ -89,6 +119,7 @@ export function createDiagnostics(options) {
     getState: snapshotState,
     getDiagnostics,
     teleport,
+    teleportToSeed,
     giveSeeds,
     openGate,
     triggerEnding,
