@@ -47,6 +47,16 @@ await page.click('canvas');
 const audioUnlocked = await page.evaluate(() => window.changming.audio.unlocked);
 assert(audioUnlocked === true, '首次点击后 AudioContext 未解锁');
 
+// 包一层播放方法，验证事件确实触发音频
+await page.evaluate(() => {
+  const audio = window.changming.audio
+  window.__audioCalls = { pickup: 0, door: 0 }
+  const pickup = audio.playPickup.bind(audio)
+  const door = audio.playDoor.bind(audio)
+  audio.playPickup = () => { window.__audioCalls.pickup += 1; return pickup() }
+  audio.playDoor = () => { window.__audioCalls.door += 1; return door() }
+})
+
     const diagnostics = await page.evaluate(() => window.changming.getDiagnostics())
     const state = await page.evaluate(() => window.changming.getState())
 
@@ -58,6 +68,24 @@ assert(audioUnlocked === true, '首次点击后 AudioContext 未解锁');
     assert(diagnostics.phase === 'playing', 'phase 不是 playing')
     assert(diagnostics.screenshotReady === true, 'screenshotReady 不为 true')
     assert(state.seed === 20261205, 'seed 未从 URL 读取')
+    assert(diagnostics.features.lantern === true, '玩家灯笼未注册为 feature')
+
+    const lantern = await page.evaluate(() => {
+      const light = window.__changming.playerLantern?.getLight?.()
+      return light
+        ? { type: light.type, visible: light.visible, castShadow: light.castShadow, intensity: light.intensity }
+        : null
+    })
+    assert(lantern?.type === 'SpotLight', '玩家灯笼不是 SpotLight')
+    assert(lantern.visible === true, '玩家灯笼默认不可见')
+    assert(lantern.castShadow === true, '玩家灯笼没有开启阴影')
+    assert(lantern.intensity > 0, '玩家灯笼强度为 0')
+
+    const lanternOff = await page.evaluate(() => window.changming.setFeature('lantern', false))
+    assert(lanternOff === true, 'setFeature("lantern", false) 未生效')
+    const lanternFeature = await page.evaluate(() => window.changming.getDiagnostics().features.lantern)
+    assert(lanternFeature === false, '灯笼开关状态未写入')
+    await page.evaluate(() => window.changming.setFeature('lantern', true))
 
     const beforeZ = state.camera.position.z
     await page.keyboard.down('w')
@@ -116,6 +144,9 @@ assert(audioUnlocked === true, '首次点击后 AudioContext 未解锁');
     assert(afterPickup.gateUnlocked === true, '集齐火种后大门未解锁')
     assert(afterPickup.seedIds.length === 3, 'seedIds 数量不正确')
 
+    const audioAfterPickup = await page.evaluate(() => window.__audioCalls)
+    assert(audioAfterPickup.pickup === 3, `拾取音效触发次数不正确：${audioAfterPickup.pickup}`)
+
     const doorTeleported = await page.evaluate(() => window.changming.teleport([0, 1.62, 6.2]))
     assert(doorTeleported === true, '传送到灯塔大门失败')
     await page.waitForFunction(
@@ -124,7 +155,10 @@ assert(audioUnlocked === true, '首次点击后 AudioContext 未解锁');
       { timeout: 5000 },
     )
     await page.keyboard.press('e')
-    await page.waitForTimeout(250)
+    await page.waitForTimeout(300)
+
+    const audioAfterDoor = await page.evaluate(() => window.__audioCalls)
+    assert(audioAfterDoor.door >= 1, '开门音效没有触发')
 
     await page.screenshot({ path: path.join(SHOT_DIR, `engine-smoke-${config.name.toLowerCase()}.png`) })
     assert(errors.length === 0, '控制台存在错误：' + errors.join(' | '))
@@ -139,6 +173,8 @@ assert(audioUnlocked === true, '首次点击后 AudioContext 未解锁');
         seedIds: finalState.seedIds,
         gateUnlocked: finalState.gateUnlocked,
       },
+      audio: audioAfterDoor,
+      lantern,
       errors,
     }
   } finally {
@@ -159,13 +195,13 @@ async function main() {
     try {
       const result = await runBrowser(config)
       results.push(result)
-      if (!result.skipped) break
     } catch (error) {
       results.push({ name: config.name, passed: false, error: error instanceof Error ? error.message : String(error) })
     }
   }
 
-  const passed = results.some((result) => result.passed)
+  const attempted = results.filter((result) => !result.skipped)
+  const passed = attempted.length > 0 && attempted.every((result) => result.passed)
   fs.writeFileSync(path.join(SHOT_DIR, 'smoke-results.json'), JSON.stringify(results, null, 2), 'utf8')
   console.log(JSON.stringify(results, null, 2))
   if (!passed) process.exitCode = 1

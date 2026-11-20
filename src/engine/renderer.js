@@ -43,6 +43,7 @@ export function createRenderer(canvas, options = {}) {
   const featureHandlers = new Map()
   const featureState = {
     shadow: true,
+    lantern: true,
     volumetric: false,
     water: false,
     rain: false,
