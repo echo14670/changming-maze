@@ -10,7 +10,6 @@ import { createInteraction } from './game/interaction.js'
 import { createHud } from './ui/hud.js'
 import { AudioManager } from './audio/AudioManager.js'
 const audioManager = new AudioManager()
-window.changming = { ...window.changming, audio: audioManager } // 暴露给测试
 
 // 在任何地方监听第一次点击
 document.addEventListener('pointerdown', () => {
@@ -94,6 +93,9 @@ try {
     fireSeeds,
     world,
   })
+
+  // createDiagnostics 会覆盖 window.changming，音频必须在它之后挂载
+  window.changming.audio = audioManager
 
   window.addEventListener('resize', () => renderer.resize())
 
