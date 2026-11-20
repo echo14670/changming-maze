@@ -38,6 +38,14 @@ async function runBrowser(config) {
     await page.goto(PAGE_URL, { waitUntil: 'load', timeout: 30000 })
     await page.waitForFunction(() => document.body.dataset.ready === 'true', null, { timeout: 30000 })
     await page.waitForTimeout(700)
+    // 验证 AudioManager 是否挂载
+const hasAudio = await page.evaluate(() => !!window.changming.audio);
+assert(hasAudio, 'AudioManager 未成功挂载到 window.changming');
+
+// 模拟点击屏幕解锁音频
+await page.click('canvas');
+const audioUnlocked = await page.evaluate(() => window.changming.audio.unlocked);
+assert(audioUnlocked === true, '首次点击后 AudioContext 未解锁');
 
     const diagnostics = await page.evaluate(() => window.changming.getDiagnostics())
     const state = await page.evaluate(() => window.changming.getState())
