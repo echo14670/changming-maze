@@ -3,6 +3,7 @@ import { createGameState } from './engine/state.js'
 import { createRenderer } from './engine/renderer.js'
 import { createInput } from './engine/input.js'
 import { createCameraRig } from './engine/camera-rig.js'
+import { createPlayerLantern } from './engine/player-lantern.js'
 import { createDiagnostics } from './engine/diagnostics.js'
 import { createWorld, createWorldAtmosphere } from './world/index.js'
 import { createFireSeeds } from './game/fire-seeds.js'
@@ -37,6 +38,9 @@ try {
   const events = createEventBus()
   const state = createGameState({ seed, quality: 'high' })
 
+  events.on('seed:collect', () => audioManager.playPickup())
+  events.on('gate:unlock', () => audioManager.playDoor())
+
   const renderer = createRenderer(canvas, { quality: state.quality })
   const input = createInput(canvas)
   const atmosphere = createWorldAtmosphere(renderer.scene, renderer.renderer, {
@@ -60,6 +64,12 @@ try {
     },
   })
   cameraRig.setLook(0, -0.035)
+
+  const playerLantern = createPlayerLantern({
+    scene: renderer.scene,
+    camera: renderer.camera,
+  })
+  renderer.registerFeature('lantern', (enabled) => playerLantern.setEnabled(enabled))
 
   const hud = createHud({ state, events })
   const fireSeeds = createFireSeeds({
@@ -104,6 +114,7 @@ try {
   renderer.start((dt) => {
     elapsed += dt
     cameraRig.update(dt)
+    playerLantern.update(dt)
     fireSeeds.update(dt, elapsed)
     interaction.update(dt)
     world.update(elapsed, dt)
@@ -121,6 +132,7 @@ try {
     renderer,
     input,
     cameraRig,
+    playerLantern,
     world,
     atmosphere,
     fireSeeds,
