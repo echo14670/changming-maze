@@ -6,7 +6,7 @@
 
 ## 项目状态
 
-当前 `dev` 已接入可运行的 B 场景与火种拾取闭环：
+当前 `main` 已接入可运行的 B 场景与火种拾取闭环：
 
 - three.js + esbuild IIFE，`npm run build` 产出 `dist/bundle.js`；
 - WebGL2 渲染循环、resize/DPR、性能统计；
