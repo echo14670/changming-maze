@@ -46,6 +46,42 @@ export const RENDER_QUALITY_PRESETS = Object.freeze({
   }),
 })
 
+/**
+ * 每个画质档对应的特性组合。切档时由管线统一应用，避免“只改 pixelRatio、
+ * 阴影/体积光/Bloom 仍按高画质跑”的假降级。
+ * water 默认关闭：主场景外海仍由 B 的 ocean 兜底，需要对比时单独开。
+ */
+export const RENDER_QUALITY_FEATURES = Object.freeze({
+  high: Object.freeze({
+    shadow: true,
+    lantern: true,
+    volumetric: true,
+    water: false,
+    bloom: true,
+    pbr: true,
+  }),
+  medium: Object.freeze({
+    shadow: true,
+    lantern: true,
+    volumetric: false,
+    water: false,
+    bloom: true,
+    pbr: true,
+  }),
+  low: Object.freeze({
+    shadow: true,
+    lantern: true,
+    volumetric: false,
+    water: false,
+    bloom: false,
+    pbr: false,
+  }),
+})
+
 export function resolveRenderQuality(value, fallback = 'high') {
   return RENDER_QUALITY_PRESETS[value] ? value : fallback
+}
+
+export function resolveQualityFeatures(value, fallback = 'high') {
+  return RENDER_QUALITY_FEATURES[value] || RENDER_QUALITY_FEATURES[fallback]
 }

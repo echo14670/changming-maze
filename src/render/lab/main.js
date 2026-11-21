@@ -106,9 +106,11 @@ function setFeature(name, enabled) {
 }
 
 function setQuality(quality) {
-  const changed = pipeline.setQuality(quality)
+  const changed = engine.setQuality(quality)
   if (changed) {
+    pipeline.setQuality(quality)
     updateQualityControls()
+    syncFeatureControls()
     engine.resize()
     pipeline.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio)
   }
@@ -190,11 +192,11 @@ function getDiagnostics() {
 
 function installControls() {
   document.querySelectorAll('[data-feature]').forEach((input) => {
-    input.checked = pipeline.getFeatures()[input.dataset.feature] !== false
     input.addEventListener('change', () => {
       setFeature(input.dataset.feature, input.checked)
     })
   })
+  syncFeatureControls()
 
   document.querySelectorAll('[data-quality]').forEach((button) => {
     button.addEventListener('click', () => setQuality(button.dataset.quality))
@@ -202,6 +204,12 @@ function installControls() {
 
   document.querySelectorAll('[data-view]').forEach((button) => {
     button.addEventListener('click', () => setView(button.dataset.view))
+  })
+}
+
+function syncFeatureControls() {
+  document.querySelectorAll('[data-feature]').forEach((input) => {
+    input.checked = pipeline.getFeatures()[input.dataset.feature] !== false
   })
 }
 

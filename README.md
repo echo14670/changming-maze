@@ -65,12 +65,15 @@
 npm install
 npm run build     # esbuild 打包到 dist/bundle.js
 npm run watch     # 开发时监听
-npm test          # Playwright 冒烟测试（先 build）
+npm run test:config  # 渲染特性/画质组合的 Node 侧契约测试（CI 也跑）
+npm test          # Playwright 冒烟测试（先 build，Chrome + Edge）
 ```
 
 构建后双击 `index.html` 即可运行（`file://`，不需要本地服务器）。
 
-当前已接入迷宫世界、带碰撞的第一人称预览移动、火种拾取与 HUD；结局镜头和小地图仍待接入。
+当前已接入：迷宫世界、第一人称移动、火种拾取与 HUD，以及黄勇杰的渲染管线
+（三光源 / 阴影 / 体积光 / Gerstner 水面 / Bloom / PBR↔Blinn 特性开关）。
+调试参数：`index.html?quality=low&water=1&bloom=0`。结局镜头和小地图仍待接入。
 
 ## 操作
 
