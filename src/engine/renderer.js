@@ -60,6 +60,8 @@ export function createRenderer(canvas, options = {}) {
   let frames = 0
   let fpsWindowStart = performance.now()
   let firstFrame = true
+  let renderCallback = null
+  const qualityHandlers = new Set()
 
   function registerFeature(name, handler) {
     if (typeof handler !== 'function') {
@@ -101,7 +103,41 @@ export function createRenderer(canvas, options = {}) {
     if (!QUALITY_PRESETS[nextQuality]) return false
     currentQuality = nextQuality
     resize()
+    qualityHandlers.forEach((handler) => {
+      try {
+        handler(currentQuality)
+      } catch (error) {
+        console.error('[changming] quality handler failed', error)
+      }
+    })
     return true
+  }
+
+  /**
+   * 画质变更钩子：渲染管线用它同步阴影贴图 / 水面细分 / Bloom 参数，
+   * 引擎自身仍然只负责 pixelRatio 与尺寸。
+   * @param {(quality: string) => void} handler
+   * @returns {() => void} 取消订阅
+   */
+  function onQualityChange(handler) {
+    if (typeof handler !== 'function') {
+      throw new TypeError('onQualityChange: handler must be a function')
+    }
+    qualityHandlers.add(handler)
+    return () => qualityHandlers.delete(handler)
+  }
+
+  /**
+   * 用后处理/渲染管线接管每帧的 render 调用。传入 null 恢复直接 renderer.render。
+   * 接管后关闭 three 的自动 info 重置，由引擎每帧统一 reset，统计包含后处理各 pass。
+   * @param {((dt: number) => void) | null} callback
+   */
+  function setRenderCallback(callback) {
+    if (callback !== null && typeof callback !== 'function') {
+      throw new TypeError('setRenderCallback: callback must be a function or null')
+    }
+    renderCallback = callback
+    renderer.info.autoReset = callback === null
   }
 
   function getStats() {
@@ -111,6 +147,7 @@ export function createRenderer(canvas, options = {}) {
       triangles: renderer.info.render.triangles,
       quality: currentQuality,
       pixelRatio: renderer.getPixelRatio(),
+      renderMode: renderCallback ? 'pipeline' : 'direct',
       size: {
         width: renderer.domElement.width,
         height: renderer.domElement.height,
@@ -137,7 +174,12 @@ export function createRenderer(canvas, options = {}) {
     lastTime = now
 
     updateCallback(dt)
-    renderer.render(scene, camera)
+    if (renderCallback) {
+      renderer.info.reset()
+      renderCallback(dt)
+    } else {
+      renderer.render(scene, camera)
+    }
 
     frames += 1
     if (now - fpsWindowStart >= 500) {
@@ -171,6 +213,8 @@ export function createRenderer(canvas, options = {}) {
   function dispose() {
     stop()
     featureHandlers.clear()
+    qualityHandlers.clear()
+    renderCallback = null
     renderer.dispose()
   }
 
@@ -184,6 +228,8 @@ export function createRenderer(canvas, options = {}) {
     setQuality,
     setFeature,
     registerFeature,
+    setRenderCallback,
+    onQualityChange,
     getFeatures,
     getStats,
     getDiagnostics,
