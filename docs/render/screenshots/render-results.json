@@ -1,0 +1,90 @@
+{
+  "browser": "Chrome",
+  "viewport": "1440x900",
+  "generatedAt": "2026-11-21T08:38:25.900Z",
+  "initialDiagnostics": {
+    "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "glError": 0,
+    "fps": 300,
+    "drawCalls": 165,
+    "triangles": 59405,
+    "quality": "high",
+    "features": {
+      "shadow": true,
+      "lantern": true,
+      "volumetric": true,
+      "water": true,
+      "bloom": true,
+      "pbr": true
+    },
+    "allFeaturesToggleable": true,
+    "ready": true
+  },
+  "lowQuality": {
+    "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "glError": 0,
+    "fps": 298,
+    "drawCalls": 151,
+    "triangles": 18357,
+    "quality": "low",
+    "features": {
+      "shadow": true,
+      "lantern": true,
+      "volumetric": true,
+      "water": true,
+      "bloom": true,
+      "pbr": true
+    },
+    "allFeaturesToggleable": true,
+    "ready": true
+  },
+  "highQuality": {
+    "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "glError": 0,
+    "fps": 297.9,
+    "drawCalls": 151,
+    "triangles": 59189,
+    "quality": "high",
+    "features": {
+      "shadow": true,
+      "lantern": true,
+      "volumetric": true,
+      "water": true,
+      "bloom": true,
+      "pbr": true
+    },
+    "allFeaturesToggleable": true,
+    "ready": true
+  },
+  "comparisons": [
+    {
+      "id": "01-shadow-comparison",
+      "feature": "shadow",
+      "view": "courtyard",
+      "averagePixelDifference": 0.873,
+      "output": "docs/render/screenshots/01-shadow-comparison.png"
+    },
+    {
+      "id": "02-volumetric-fog-comparison",
+      "feature": "volumetric",
+      "view": "courtyard",
+      "averagePixelDifference": 2.386,
+      "output": "docs/render/screenshots/02-volumetric-fog-comparison.png"
+    },
+    {
+      "id": "03-water-comparison",
+      "feature": "water",
+      "view": "water",
+      "averagePixelDifference": 2.974,
+      "output": "docs/render/screenshots/03-water-comparison.png"
+    },
+    {
+      "id": "04-post-processing-comparison",
+      "feature": "bloom",
+      "view": "ember",
+      "averagePixelDifference": 7.949,
+      "output": "docs/render/screenshots/04-post-processing-comparison.png"
+    }
+  ],
+  "consoleErrors": []
+}

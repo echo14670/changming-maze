@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <title>长明 · 渲染验收台</title>
+  <link rel="stylesheet" href="./src/render/lab/lab.css">
+</head>
+<body>
+  <canvas id="render-canvas" aria-label="长明渲染验收场景"></canvas>
+
+  <header class="lab-header">
+    <div class="lab-rule" aria-hidden="true"></div>
+    <div class="lab-title">
+      <span class="lab-kicker">Render Lab 01</span>
+      <strong>长明 · 渲染验收台</strong>
+      <span>WebGL2 / three.js / ACES</span>
+    </div>
+  </header>
+
+  <aside class="lab-controls" aria-label="渲染控制">
+    <header>
+      <strong>渲染控制</strong>
+      <span class="live-dot" aria-label="渲染中"></span>
+    </header>
+
+    <section class="control-section">
+      <span class="control-label">机位</span>
+      <div class="view-grid">
+        <button type="button" data-view="courtyard">庭院</button>
+        <button type="button" data-view="water">水院</button>
+        <button type="button" data-view="ember">火盆</button>
+      </div>
+    </section>
+
+    <section class="control-section">
+      <span class="control-label">画质</span>
+      <div class="quality-switch">
+        <button type="button" data-quality="high">高</button>
+        <button type="button" data-quality="medium">中</button>
+        <button type="button" data-quality="low">低</button>
+      </div>
+    </section>
+
+    <section class="control-section">
+      <span class="control-label">特性</span>
+      <div class="feature-grid">
+        <label class="feature-toggle">
+          <input type="checkbox" data-feature="shadow">
+          <span>阴影</span>
+        </label>
+        <label class="feature-toggle">
+          <input type="checkbox" data-feature="lantern">
+          <span>灯笼</span>
+        </label>
+        <label class="feature-toggle">
+          <input type="checkbox" data-feature="volumetric">
+          <span>雾 / 体积光</span>
+        </label>
+        <label class="feature-toggle">
+          <input type="checkbox" data-feature="water">
+          <span>水面</span>
+        </label>
+        <label class="feature-toggle">
+          <input type="checkbox" data-feature="bloom">
+          <span>Bloom</span>
+        </label>
+        <label class="feature-toggle">
+          <input type="checkbox" data-feature="pbr">
+          <span>PBR</span>
+        </label>
+      </div>
+    </section>
+  </aside>
+
+  <footer class="lab-footer">
+    <span>1440×900 · HIGH</span>
+    <span id="lab-status"></span>
+  </footer>
+
+  <div id="lab-error" role="alert" hidden></div>
+
+  <script
+    src="./dist/render-lab.js"
+    onerror="document.querySelector('#lab-error').hidden=false;document.querySelector('#lab-error').textContent='未找到 dist/render-lab.js，请先运行 node tools/build-render-lab.mjs'"
+  ></script>
+</body>
+</html>
