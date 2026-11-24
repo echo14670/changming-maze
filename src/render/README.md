@@ -2,8 +2,8 @@
 
 负责人：黄勇杰
 
-第一周目标是在不改动现有入口的前提下，提供一套可独立接入的渲染管线。当前主入口
-`src/main.js` 保持原样，模块通过 `render-lab.html` 进行可视化验收。
+第二周已将管线接入 `src/main.js`，主场景由后处理管线接管每帧渲染。
+`render-lab.html` 保留为独立可视化验收页。
 
 ## 管线顺序
 
@@ -13,6 +13,7 @@
   -> 阴影贴图
   -> Gerstner 水面
   -> 指数雾 / 地面雾层 / 灯笼体积光
+  -> 相机局部雨丝 / 地面涟漪（可选）
   -> HalfFloat HDR RenderTarget
   -> Bloom
   -> 暗角
@@ -47,7 +48,7 @@ pipeline.setFeature('shadow', false)
 `engine` 是引擎模块的 `createRenderer()` 返回值。传入后会注册以下特性，可直接使用
 项目已有的 `window.changming.setFeature()` 或 `renderer.setFeature()`：
 
-`shadow` / `lantern` / `volumetric` / `water` / `bloom` / `pbr`
+`shadow` / `lantern` / `volumetric` / `water` / `rain` / `bloom` / `pbr`
 
 不传 `engine` 时，管线仍可独立工作，特性通过 `pipeline.setFeature()` 控制。
 
@@ -62,6 +63,7 @@ pipeline.setFeature('shadow', false)
 | `lighting-model.js` | PBR / Blinn-Phong 可逆切换 |
 | `volumetric.js` | 指数雾、地面雾层、灯笼体积光锥 |
 | `water-surface.js` | 四层 Gerstner 波、法线扰动、简化月光反射 |
+| `rain.js` | 相机局部雨丝、程序化地面涟漪 |
 | `post-processing.js` | HDR Bloom、暗角、ACES、sRGB 输出 |
 | `lab/main.js` | 独立渲染验收场景 |
 
@@ -70,6 +72,7 @@ pipeline.setFeature('shadow', false)
 ```bash
 node tools/build-render-lab.mjs
 node tools/capture-render-comparisons.cjs
+npm run capture:main-render
 ```
 
 构建后在支持 WebGL2 的 Chrome / Edge 中直接打开 `render-lab.html`。自动验收会生成：
@@ -79,3 +82,11 @@ node tools/capture-render-comparisons.cjs
 - `docs/render/screenshots/03-water-comparison.png`
 - `docs/render/screenshots/04-post-processing-comparison.png`
 - `docs/render/screenshots/render-results.json`
+- `docs/render/screenshots/main-01-shadow-comparison.png`
+- `docs/render/screenshots/main-02-volumetric-fog-comparison.png`
+- `docs/render/screenshots/main-03-water-comparison.png`
+- `docs/render/screenshots/main-04-post-processing-comparison.png`
+- `docs/render/screenshots/main-05-rain-comparison.png`
+- `docs/render/screenshots/main-render-results.json`
+
+第二周完整记录见 [黄勇杰-第二周交付.md](黄勇杰-第二周交付.md)。

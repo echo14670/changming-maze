@@ -43,6 +43,7 @@ const pipeline = createRenderPipeline({
     lantern: true,
     volumetric: true,
     water: true,
+    rain: false,
     bloom: true,
     pbr: true,
   },

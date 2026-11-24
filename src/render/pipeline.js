@@ -8,6 +8,7 @@ import {
 import { createLightingModelController } from './lighting-model.js'
 import { createLightingRig } from './lighting.js'
 import { createPostProcessing } from './post-processing.js'
+import { createRainSurface } from './rain.js'
 import { createVolumetricFog } from './volumetric.js'
 import { createWaterSurface } from './water-surface.js'
 
@@ -51,6 +52,11 @@ export function createRenderPipeline(options) {
     quality,
     ...(options.water || {}),
   })
+  const rain = createRainSurface({
+    scene,
+    camera,
+    quality,
+  })
   const post = createPostProcessing({
     renderer,
     scene,
@@ -72,6 +78,9 @@ export function createRenderPipeline(options) {
     },
     water(enabled) {
       water.setEnabled(enabled)
+    },
+    rain(enabled) {
+      rain.setEnabled(enabled)
     },
     bloom(enabled) {
       post.setBloom(enabled)
@@ -106,6 +115,7 @@ export function createRenderPipeline(options) {
     lighting.setQuality(quality)
     volumetric.setQuality(quality)
     water.setQuality(quality)
+    rain.setQuality(quality)
     post.setQuality(quality)
     // 画质档同时决定特性组合；engine 已注册的 handler 负责同步双方状态。
     const presetFeatures = RENDER_QUALITY_FEATURES[quality]
@@ -126,6 +136,7 @@ export function createRenderPipeline(options) {
     lighting.update(dt)
     volumetric.update(dt)
     water.update(dt)
+    rain.update(dt)
   }
 
   function render(dt) {
@@ -135,6 +146,7 @@ export function createRenderPipeline(options) {
   function dispose() {
     volumetric.dispose()
     water.dispose()
+    rain.dispose()
     post.dispose()
     lightingModel.dispose()
     lighting.dispose()
@@ -155,6 +167,7 @@ export function createRenderPipeline(options) {
     lightingModel,
     volumetric,
     water,
+    rain,
     post,
     update,
     render,
