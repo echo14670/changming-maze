@@ -3,9 +3,10 @@ import { createGameState } from './engine/state.js'
 import { createRenderer } from './engine/renderer.js'
 import { createInput } from './engine/input.js'
 import { createCameraRig } from './engine/camera-rig.js'
-import { createPlayerLantern } from './engine/player-lantern.js'
 import { createDiagnostics } from './engine/diagnostics.js'
 import { createWorld, createWorldAtmosphere } from './world/index.js'
+import { createRenderPipeline } from './render/pipeline.js'
+import { RENDER_FEATURE_NAMES } from './render/config.js'
 import { createFireSeeds } from './game/fire-seeds.js'
 import { createInteraction } from './game/interaction.js'
 import { createHud } from './ui/hud.js'
@@ -28,6 +29,25 @@ function fail(message, detail) {
   document.body.dataset.ready = 'error'
 }
 
+function readQualityParam(params) {
+  const value = params.get('quality')
+  return value === 'high' || value === 'medium' || value === 'low' ? value : 'high'
+}
+
+/**
+ * URL 覆盖特性默认值，例如 ?water=1&bloom=0。
+ * 供答辩现场切换和 Playwright 回归使用，不改 UI。
+ */
+function readFeatureOverrides(params) {
+  const overrides = {}
+  RENDER_FEATURE_NAMES.forEach((name) => {
+    const raw = params.get(name)
+    if (raw === null) return
+    overrides[name] = !['0', 'false', 'off', 'no'].includes(raw.toLowerCase())
+  })
+  return overrides
+}
+
 try {
   if (!canvas) throw new Error('找不到 #scene canvas')
 
@@ -36,7 +56,7 @@ try {
   const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : 20261205
 
   const events = createEventBus()
-  const state = createGameState({ seed, quality: 'high' })
+  const state = createGameState({ seed, quality: readQualityParam(params) })
 
   events.on('seed:collect', () => audioManager.playPickup())
   events.on('gate:unlock', () => audioManager.playDoor())
@@ -46,6 +66,15 @@ try {
   const atmosphere = createWorldAtmosphere(renderer.scene, renderer.renderer, {
     seed,
   })
+  // atmosphere-legacy 只保留夜空/星/月/雾，光照全部交给 render 管线，
+  // 避免旧半球光/平行光/区域点光与新管线重复叠加（双份光源、双份阴影）。
+  atmosphere.group.children
+    .filter((child) => child.isLight)
+    .forEach((light) => {
+      atmosphere.group.remove(light)
+      light.dispose?.()
+    })
+
   const world = createWorld({
     scene: renderer.scene,
     seed,
@@ -65,17 +94,45 @@ try {
   })
   cameraRig.setLook(0, -0.035)
 
-  const playerLantern = createPlayerLantern({
+  // 黄勇杰的渲染管线接管主场景：三光源、阴影、体积光、Gerstner 水面、
+  // Bloom/ACES、PBR/Blinn 特性开关。旧玩家灯笼由管线 lantern 替换。
+  const pipeline = createRenderPipeline({
     scene: renderer.scene,
     camera: renderer.camera,
+    renderer: renderer.renderer,
+    engine: renderer,
+    quality: state.quality,
+    features: readFeatureOverrides(params),
+    water: {
+      size: { x: 320, z: 320 },
+      position: { x: 0, y: -1.12, z: 0 },
+      deepColor: 0x082f39,
+      shallowColor: 0x327b80,
+      horizonColor: 0x547a81,
+    },
+    onFeatureChange(name, enabled) {
+      // water 打开时隐藏 B 的整片海面 shader，避免两层海面叠加。
+      if (name === 'water' && world.ocean?.mesh) {
+        world.ocean.mesh.visible = !enabled
+      }
+    },
   })
-  renderer.registerFeature('lantern', (enabled) => playerLantern.setEnabled(enabled))
+
+  // 兼容旧诊断/测试接口：playerLantern 现在指向管线里的同一盏 SpotLight。
+  const playerLantern = {
+    getLight: () => pipeline.lighting.lantern,
+    setEnabled: (enabled) => pipeline.setFeature('lantern', enabled),
+    isEnabled: () => pipeline.getFeatures().lantern,
+    update() {},
+  }
 
   const hud = createHud({ state, events })
   const fireSeeds = createFireSeeds({
     scene: renderer.scene,
     world,
   })
+  // 火种在管线之后创建，补一次材质登记，保证 pbr / Blinn 切换覆盖到它们。
+  pipeline.lightingModel.refresh()
   const interaction = createInteraction({
     camera: renderer.camera,
     cameraRig,
@@ -102,12 +159,24 @@ try {
     interaction,
     fireSeeds,
     world,
+    pipeline,
   })
 
   // createDiagnostics 会覆盖 window.changming，音频必须在它之后挂载
   window.changming.audio = audioManager
+  window.changming.pipeline = pipeline
 
-  window.addEventListener('resize', () => renderer.resize())
+  // 后处理接管每帧渲染；画质切档时同步管线参数与后处理尺寸。
+  renderer.setRenderCallback((dt) => pipeline.render(dt))
+  renderer.onQualityChange((quality) => {
+    pipeline.setQuality(quality)
+    pipeline.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio)
+  })
+
+  window.addEventListener('resize', () => {
+    renderer.resize()
+    pipeline.resize(window.innerWidth, window.innerHeight, window.devicePixelRatio)
+  })
 
   let elapsed = 0
   let activeRegion = ''
@@ -118,6 +187,7 @@ try {
     fireSeeds.update(dt, elapsed)
     interaction.update(dt)
     world.update(elapsed, dt)
+    pipeline.update(dt)
 
     const position = cameraRig.getPosition()
     const regionName = world.getRegionAt(position.x, position.z).name
@@ -135,6 +205,7 @@ try {
     playerLantern,
     world,
     atmosphere,
+    pipeline,
     fireSeeds,
     interaction,
     hud,

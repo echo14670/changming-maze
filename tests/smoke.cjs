@@ -65,10 +65,18 @@ await page.evaluate(() => {
     assert(diagnostics.drawCalls > 0, 'draw call 为 0')
     assert(diagnostics.triangles > 0, '三角面数为 0')
     assert(diagnostics.fps > 0, 'FPS 为 0')
+    assert(diagnostics.renderMode === 'pipeline', '主场景未由 render pipeline 接管')
     assert(diagnostics.phase === 'playing', 'phase 不是 playing')
     assert(diagnostics.screenshotReady === true, 'screenshotReady 不为 true')
     assert(state.seed === 20261205, 'seed 未从 URL 读取')
     assert(diagnostics.features.lantern === true, '玩家灯笼未注册为 feature')
+
+    const pipelineDiagnostics = await page.evaluate(() => window.changming.getPipelineDiagnostics())
+    assert(pipelineDiagnostics, '缺少渲染管线诊断 getPipelineDiagnostics()')
+    assert(pipelineDiagnostics.quality === 'high', '渲染管线画质不是 high')
+    for (const name of ['shadow', 'lantern', 'volumetric', 'water', 'bloom', 'pbr']) {
+      assert(name in pipelineDiagnostics.features, `渲染管线缺少特性 ${name}`)
+    }
 
     const lantern = await page.evaluate(() => {
       const light = window.__changming.playerLantern?.getLight?.()
@@ -96,9 +104,52 @@ await page.evaluate(() => {
 
     const qualityChanged = await page.evaluate(() => window.changming.setQuality('low'))
     assert(qualityChanged === true, 'setQuality("low") 未生效')
-    const lowQuality = await page.evaluate(() => window.changming.getDiagnostics())
-    assert(lowQuality.quality === 'low', '画质档未切换到 low')
+    const lowQuality = await page.evaluate(() => ({
+      diagnostics: window.changming.getDiagnostics(),
+      pipeline: window.changming.getPipelineDiagnostics(),
+    }))
+    assert(lowQuality.diagnostics.quality === 'low', '画质档未切换到 low')
+    assert(lowQuality.pipeline.quality === 'low', '渲染管线未同步 low 画质')
+    assert(lowQuality.diagnostics.features.bloom === false, 'low 画质未关闭 Bloom')
+    assert(lowQuality.diagnostics.features.volumetric === false, 'low 画质未关闭体积光')
+    assert(lowQuality.diagnostics.features.pbr === false, 'low 画质未切到 Blinn-Phong')
     await page.evaluate(() => window.changming.setQuality('high'))
+    const highQuality = await page.evaluate(() => window.changming.getDiagnostics())
+    assert(highQuality.features.bloom === true, 'high 画质未恢复 Bloom')
+    assert(highQuality.features.volumetric === true, 'high 画质未恢复体积光')
+
+    const featureToggles = await page.evaluate(() => {
+      const results = {}
+      for (const name of ['shadow', 'lantern', 'volumetric', 'water', 'bloom', 'pbr']) {
+        const off = window.changming.setFeature(name, false)
+        const offState = window.changming.getDiagnostics().features[name]
+        const on = window.changming.setFeature(name, true)
+        const onState = window.changming.getDiagnostics().features[name]
+        results[name] = { off, offState, on, onState }
+      }
+      return results
+    })
+    for (const [name, result] of Object.entries(featureToggles)) {
+      assert(result.off === true && result.offState === false, `setFeature("${name}", false) 未生效`)
+      assert(result.on === true && result.onState === true, `setFeature("${name}", true) 未恢复`)
+    }
+
+    const waterSwap = await page.evaluate(() => {
+      window.changming.setFeature('water', true)
+      const enabled = {
+        oceanVisible: window.__changming.world.ocean.mesh.visible,
+        waterVisible: window.__changming.pipeline.water.mesh.visible,
+      }
+      window.changming.setFeature('water', false)
+      const disabled = {
+        oceanVisible: window.__changming.world.ocean.mesh.visible,
+        waterVisible: window.__changming.pipeline.water.mesh.visible,
+      }
+      return { enabled, disabled }
+    })
+    assert(waterSwap.enabled.waterVisible === true, 'water 特性未显示 Gerstner 水面')
+    assert(waterSwap.enabled.oceanVisible === false, 'water 特性未隐藏 B 海面')
+    assert(waterSwap.disabled.oceanVisible === true, '关闭 water 后 B 海面未恢复')
 
     const shadowOff = await page.evaluate(() => window.changming.setFeature('shadow', false))
     assert(shadowOff === true, 'setFeature("shadow", false) 未生效')
@@ -163,6 +214,28 @@ await page.evaluate(() => {
     await page.screenshot({ path: path.join(SHOT_DIR, `engine-smoke-${config.name.toLowerCase()}.png`) })
     assert(errors.length === 0, '控制台存在错误：' + errors.join(' | '))
 
+    // 1440×900 下记录高/低画质的 FPS 与 draw call；headless 数据只用于横向对比回归。
+    const performance = await page.evaluate(async () => {
+      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+      const sample = async (quality) => {
+        window.changming.setQuality(quality)
+        // 切档会重建阴影贴图/水面几何并重编译材质，等 3 秒让 FPS 窗口稳定。
+        await wait(3000)
+        const current = window.changming.getDiagnostics()
+        return {
+          quality,
+          fps: current.fps,
+          drawCalls: current.drawCalls,
+          triangles: current.triangles,
+          features: current.features,
+        }
+      }
+      const high = await sample('high')
+      const low = await sample('low')
+      await sample('high')
+      return { viewport: '1440x900', renderer: 'headless swiftshader', high, low }
+    })
+
     const finalState = await page.evaluate(() => window.changming.getState())
     return {
       name: config.name,
@@ -175,6 +248,7 @@ await page.evaluate(() => {
       },
       audio: audioAfterDoor,
       lantern,
+      performance,
       errors,
     }
   } finally {

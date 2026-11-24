@@ -3,7 +3,7 @@
  * 供 Playwright、答辩排查和调试使用；不参与正常玩法。
  */
 export function createDiagnostics(options) {
-  const { state, renderer, cameraRig, events, interaction, fireSeeds, world } = options
+  const { state, renderer, cameraRig, events, interaction, fireSeeds, world, pipeline } = options
   if (!state) throw new Error('createDiagnostics: state is required')
   if (!renderer) throw new Error('createDiagnostics: renderer is required')
 
@@ -114,10 +114,15 @@ export function createDiagnostics(options) {
     }
   }
 
+  function getPipelineDiagnostics() {
+    return pipeline?.getDiagnostics?.() || null
+  }
+
   const api = {
     version: '0.1.0',
     getState: snapshotState,
     getDiagnostics,
+    getPipelineDiagnostics,
     teleport,
     teleportToSeed,
     giveSeeds,
