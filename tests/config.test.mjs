@@ -9,12 +9,13 @@ import {
   resolveRenderQuality,
 } from '../src/render/config.js'
 
-test('render feature names are the six contract features', () => {
+test('render feature names are the seven contract features', () => {
   assert.deepEqual([...RENDER_FEATURE_NAMES], [
     'shadow',
     'lantern',
     'volumetric',
     'water',
+    'rain',
     'bloom',
     'pbr',
   ])
@@ -43,6 +44,7 @@ test('low quality really disables the expensive features', () => {
   assert.equal(low.volumetric, false)
   assert.equal(low.bloom, false)
   assert.equal(low.pbr, false)
+  assert.equal(low.rain, false)
   // 灯笼和阴影保留，低画质仍然要能看清路。
   assert.equal(low.lantern, true)
   assert.equal(low.shadow, true)

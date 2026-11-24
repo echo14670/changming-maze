@@ -74,7 +74,7 @@ await page.evaluate(() => {
     const pipelineDiagnostics = await page.evaluate(() => window.changming.getPipelineDiagnostics())
     assert(pipelineDiagnostics, '缺少渲染管线诊断 getPipelineDiagnostics()')
     assert(pipelineDiagnostics.quality === 'high', '渲染管线画质不是 high')
-    for (const name of ['shadow', 'lantern', 'volumetric', 'water', 'bloom', 'pbr']) {
+    for (const name of ['shadow', 'lantern', 'volumetric', 'water', 'rain', 'bloom', 'pbr']) {
       assert(name in pipelineDiagnostics.features, `渲染管线缺少特性 ${name}`)
     }
 
@@ -120,7 +120,7 @@ await page.evaluate(() => {
 
     const featureToggles = await page.evaluate(() => {
       const results = {}
-      for (const name of ['shadow', 'lantern', 'volumetric', 'water', 'bloom', 'pbr']) {
+      for (const name of ['shadow', 'lantern', 'volumetric', 'water', 'rain', 'bloom', 'pbr']) {
         const off = window.changming.setFeature(name, false)
         const offState = window.changming.getDiagnostics().features[name]
         const on = window.changming.setFeature(name, true)

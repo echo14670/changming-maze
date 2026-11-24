@@ -1,19 +1,20 @@
 {
   "browser": "Chrome",
   "viewport": "1440x900",
-  "generatedAt": "2026-11-21T08:38:25.900Z",
+  "generatedAt": "2026-11-24T13:14:16.395Z",
   "initialDiagnostics": {
     "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
     "glError": 0,
     "fps": 300,
-    "drawCalls": 165,
-    "triangles": 59405,
+    "drawCalls": 164,
+    "triangles": 8205,
     "quality": "high",
     "features": {
       "shadow": true,
       "lantern": true,
       "volumetric": true,
-      "water": true,
+      "water": false,
+      "rain": false,
       "bloom": true,
       "pbr": true
     },
@@ -23,17 +24,18 @@
   "lowQuality": {
     "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
     "glError": 0,
-    "fps": 298,
-    "drawCalls": 151,
-    "triangles": 18357,
+    "fps": 226.6,
+    "drawCalls": 133,
+    "triangles": 7142,
     "quality": "low",
     "features": {
       "shadow": true,
       "lantern": true,
-      "volumetric": true,
-      "water": true,
-      "bloom": true,
-      "pbr": true
+      "volumetric": false,
+      "water": false,
+      "rain": false,
+      "bloom": false,
+      "pbr": false
     },
     "allFeaturesToggleable": true,
     "ready": true
@@ -41,15 +43,16 @@
   "highQuality": {
     "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
     "glError": 0,
-    "fps": 297.9,
-    "drawCalls": 151,
-    "triangles": 59189,
+    "fps": 297.8,
+    "drawCalls": 150,
+    "triangles": 7989,
     "quality": "high",
     "features": {
       "shadow": true,
       "lantern": true,
       "volumetric": true,
-      "water": true,
+      "water": false,
+      "rain": false,
       "bloom": true,
       "pbr": true
     },
@@ -61,28 +64,28 @@
       "id": "01-shadow-comparison",
       "feature": "shadow",
       "view": "courtyard",
-      "averagePixelDifference": 0.873,
+      "averagePixelDifference": 1.318,
       "output": "docs/render/screenshots/01-shadow-comparison.png"
     },
     {
       "id": "02-volumetric-fog-comparison",
       "feature": "volumetric",
       "view": "courtyard",
-      "averagePixelDifference": 2.386,
+      "averagePixelDifference": 2.842,
       "output": "docs/render/screenshots/02-volumetric-fog-comparison.png"
     },
     {
       "id": "03-water-comparison",
       "feature": "water",
       "view": "water",
-      "averagePixelDifference": 2.974,
+      "averagePixelDifference": 2.812,
       "output": "docs/render/screenshots/03-water-comparison.png"
     },
     {
       "id": "04-post-processing-comparison",
       "feature": "bloom",
       "view": "ember",
-      "averagePixelDifference": 7.949,
+      "averagePixelDifference": 7.316,
       "output": "docs/render/screenshots/04-post-processing-comparison.png"
     }
   ],

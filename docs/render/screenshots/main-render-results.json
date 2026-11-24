@@ -1,0 +1,150 @@
+{
+  "generatedAt": "2026-11-24T13:18:34.136Z",
+  "seed": 20261205,
+  "viewport": "1440x900",
+  "note": "Headless numbers are regression measurements on the detected GPU and may differ from an interactive session.",
+  "capture": {
+    "browser": "Chrome",
+    "comparisons": [
+      {
+        "id": "main-01-shadow-comparison",
+        "feature": "shadow",
+        "averagePixelDifference": 6.065,
+        "output": "docs/render/screenshots/main-01-shadow-comparison.png"
+      },
+      {
+        "id": "main-02-volumetric-fog-comparison",
+        "feature": "volumetric",
+        "averagePixelDifference": 0.536,
+        "output": "docs/render/screenshots/main-02-volumetric-fog-comparison.png"
+      },
+      {
+        "id": "main-03-water-comparison",
+        "feature": "water",
+        "averagePixelDifference": 8.083,
+        "output": "docs/render/screenshots/main-03-water-comparison.png"
+      },
+      {
+        "id": "main-04-post-processing-comparison",
+        "feature": "bloom",
+        "averagePixelDifference": 7.581,
+        "output": "docs/render/screenshots/main-04-post-processing-comparison.png"
+      },
+      {
+        "id": "main-05-rain-comparison",
+        "feature": "rain",
+        "averagePixelDifference": 0.099,
+        "output": "docs/render/screenshots/main-05-rain-comparison.png"
+      }
+    ],
+    "consoleErrors": []
+  },
+  "performance": [
+    {
+      "browser": "Chrome",
+      "viewport": "1440x900",
+      "mode": "headless",
+      "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "unmaskedRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028E0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "glError": 0,
+      "high": {
+        "quality": "high",
+        "fps": 292.3,
+        "sampleFrames": 731,
+        "drawCalls": 256,
+        "triangles": 191331,
+        "features": {
+          "shadow": true,
+          "lantern": true,
+          "volumetric": true,
+          "water": false,
+          "rain": false,
+          "bloom": true,
+          "pbr": true,
+          "ssao": false
+        },
+        "pixelRatio": 1,
+        "size": {
+          "width": 1440,
+          "height": 900
+        }
+      },
+      "low": {
+        "quality": "low",
+        "fps": 300,
+        "sampleFrames": 750,
+        "drawCalls": 163,
+        "triangles": 113677,
+        "features": {
+          "shadow": true,
+          "lantern": true,
+          "volumetric": false,
+          "water": false,
+          "rain": false,
+          "bloom": false,
+          "pbr": false,
+          "ssao": false
+        },
+        "pixelRatio": 1,
+        "size": {
+          "width": 1440,
+          "height": 900
+        }
+      },
+      "consoleErrors": []
+    },
+    {
+      "browser": "Edge",
+      "viewport": "1440x900",
+      "mode": "headless",
+      "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "unmaskedRenderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4060 Laptop GPU (0x000028E0) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "glError": 0,
+      "high": {
+        "quality": "high",
+        "fps": 278.8,
+        "sampleFrames": 697,
+        "drawCalls": 256,
+        "triangles": 191331,
+        "features": {
+          "shadow": true,
+          "lantern": true,
+          "volumetric": true,
+          "water": false,
+          "rain": false,
+          "bloom": true,
+          "pbr": true,
+          "ssao": false
+        },
+        "pixelRatio": 1,
+        "size": {
+          "width": 1440,
+          "height": 900
+        }
+      },
+      "low": {
+        "quality": "low",
+        "fps": 299.8,
+        "sampleFrames": 750,
+        "drawCalls": 163,
+        "triangles": 113677,
+        "features": {
+          "shadow": true,
+          "lantern": true,
+          "volumetric": false,
+          "water": false,
+          "rain": false,
+          "bloom": false,
+          "pbr": false,
+          "ssao": false
+        },
+        "pixelRatio": 1,
+        "size": {
+          "width": 1440,
+          "height": 900
+        }
+      },
+      "consoleErrors": []
+    }
+  ]
+}

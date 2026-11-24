@@ -14,13 +14,15 @@
 - 15×15 DFS 石阵、四区域、灯塔、礁岛、外海与墙体碰撞；
 - 三枚带发光核心、光晕、旋转环和火星的火种；
 - 玩家随身灯笼：跟随相机、投射动态阴影，可通过 `setFeature('lantern', …)` 开关；
+- 黄勇杰渲染管线已接入主场景：三光源 / 阴影 / 体积光 / Gerstner 水面 /
+  雨与涟漪 / Bloom / PBR↔Blinn，七项特性均可开关；
 - AudioManager 已接入火种拾取 / 大门开启事件（首次点击解锁 AudioContext）；
 - 宽松距离/视线判定、自动高亮、`E` 提示、拾取动画和 `0/3 → 3/3` HUD；
 - 集齐火种后灯塔大门提示与开门/主灯接口；
 - `window.changming` 诊断接口；
 - Playwright 冒烟测试，自动验证三枚火种均可拾取。
 
-玩家正式控制器、结局镜头、小地图、正式渲染特效和音频仍在各自模块开发中。
+玩家正式控制器、结局镜头、小地图和正式音频仍在各自模块开发中。
 
 ## 团队
 
@@ -67,13 +69,14 @@ npm run build     # esbuild 打包到 dist/bundle.js
 npm run watch     # 开发时监听
 npm run test:config  # 渲染特性/画质组合的 Node 侧契约测试（CI 也跑）
 npm test          # Playwright 冒烟测试（先 build，Chrome + Edge）
+npm run capture:main-render  # 主场景五组对比图 + Chrome/Edge 性能记录
 ```
 
 构建后双击 `index.html` 即可运行（`file://`，不需要本地服务器）。
 
 当前已接入：迷宫世界、第一人称移动、火种拾取与 HUD，以及黄勇杰的渲染管线
-（三光源 / 阴影 / 体积光 / Gerstner 水面 / Bloom / PBR↔Blinn 特性开关）。
-调试参数：`index.html?quality=low&water=1&bloom=0`。结局镜头和小地图仍待接入。
+（三光源 / 阴影 / 体积光 / Gerstner 水面 / 雨与涟漪 / Bloom / PBR↔Blinn 特性开关）。
+调试参数：`index.html?quality=low&water=1&rain=1&bloom=0`。结局镜头和小地图仍待接入。
 
 ## 操作
 
@@ -92,6 +95,7 @@ npm test          # Playwright 冒烟测试（先 build，Chrome + Edge）
 - [游戏方向方案与排期](docs/游戏方向方案与排期.md)
 - [第一周任务](docs/第一周任务.md)
 - [第二周方案](docs/第二周方案.md)
+- [黄勇杰第二周交付](docs/render/黄勇杰-第二周交付.md)
 - [接口文档](docs/接口文档.md)
 - [提交与协作说明](docs/提交与协作说明.md)
 - [开源模型渲染方案](docs/开源模型渲染方案.md)
