@@ -136,28 +136,54 @@
     const lightPositions = [];
     const boatGeometry = new THREE.BoxGeometry(1.4, 0.25, 0.45);
     const boatMaterial = new THREE.MeshBasicMaterial({ color: 0x111b20 });
+    const boatCount = 11;
+    const boats = new THREE.InstancedMesh(
+      boatGeometry,
+      boatMaterial,
+      boatCount
+    );
+    boats.name = 'DistantBoats';
+    boats.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    boats.frustumCulled = false;
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const scale = new THREE.Vector3();
+    const position = new THREE.Vector3();
     const bobbers = [];
 
-    for (let i = 0; i < 11; i += 1) {
+    for (let i = 0; i < boatCount; i += 1) {
       const angle = random.range(-Math.PI * 0.88, Math.PI * 0.88);
       const radius = random.range(125, 285);
       const x = Math.sin(angle) * radius;
       const z = Math.cos(angle) * radius;
       const y = -0.72 + Math.sin(angle) * 0.2;
-
-      const boat = new THREE.Mesh(boatGeometry, boatMaterial);
-      boat.userData.noMerge = true;
-      boat.position.set(x, y, z);
-      boat.rotation.y = random.range(-0.5, 0.5) - angle * 0.1;
-      boat.scale.set(random.range(0.7, 1.7), 1, random.range(0.7, 1.2));
-      group.add(boat);
-      bobbers.push({ object: boat, baseY: y, phase: random() * Math.PI * 2 });
+      const rotationY = random.range(-0.5, 0.5) - angle * 0.1;
+      const boatScale = new THREE.Vector3(
+        random.range(0.7, 1.7),
+        1,
+        random.range(0.7, 1.2)
+      );
+      position.set(x, y, z);
+      quaternion.setFromEuler(new THREE.Euler(0, rotationY, 0));
+      matrix.compose(position, quaternion, boatScale);
+      boats.setMatrixAt(i, matrix);
+      bobbers.push({
+        index: i,
+        x,
+        z,
+        baseY: y,
+        phase: random() * Math.PI * 2,
+        rotationY,
+        scale: boatScale,
+      });
 
       lightPositions.push(x, y + 0.3, z);
       if (random.chance(0.45)) {
         lightPositions.push(x + random.range(-0.25, 0.25), y + 0.22, z);
       }
     }
+    boats.instanceMatrix.needsUpdate = true;
+    group.add(boats);
 
     const lightGeometry = new THREE.BufferGeometry();
     lightGeometry.setAttribute(
@@ -177,14 +203,27 @@
     lights.name = 'BoatLights';
     group.add(lights);
     group.userData.lights = lights;
+    group.userData.boatMesh = boats;
     group.userData.bobbers = bobbers;
     group.userData.updateBobbers = function updateBobbers(time) {
       bobbers.forEach(function (boat) {
-        boat.object.position.y =
-          boat.baseY + Math.sin(time * 0.55 + boat.phase) * 0.08;
-        boat.object.rotation.z =
-          Math.sin(time * 0.43 + boat.phase) * 0.018;
+        position.set(
+          boat.x,
+          boat.baseY + Math.sin(time * 0.55 + boat.phase) * 0.08,
+          boat.z
+        );
+        quaternion.setFromEuler(
+          new THREE.Euler(
+            0,
+            boat.rotationY,
+            Math.sin(time * 0.43 + boat.phase) * 0.018
+          )
+        );
+        scale.copy(boat.scale);
+        matrix.compose(position, quaternion, scale);
+        boats.setMatrixAt(boat.index, matrix);
       });
+      boats.instanceMatrix.needsUpdate = true;
     };
     return group;
   }

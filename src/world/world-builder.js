@@ -35,6 +35,7 @@
       materials,
       { seed }
     );
+    const mazeMeshStats = countRenderableParts(mazeGeometry.group);
     root.add(mazeGeometry.group);
 
     const lighthouse = Changming.createLighthouse(THREE, materials, {
@@ -123,6 +124,12 @@
       regionOrder: ['courtyard', 'water', 'ember', 'atrium'],
       stats: Object.assign(meshStats, {
         mergedStaticDrawCalls: mergeStats.removedCalls,
+        staticBatchInputMeshes: mergeStats.inputMeshes,
+        staticBatchOutputMeshes: mergeStats.outputMeshes,
+        staticBatchMaterialGroups: mergeStats.materialGroupsMerged,
+        mazeMeshCount: mazeMeshStats.meshCount,
+        mazeInstancedMeshCount: mazeMeshStats.instancedMeshCount,
+        mazeEstimatedTriangles: mazeMeshStats.estimatedTriangles,
         wallSegments: mazeGeometry.wallCount,
         mazeCells: maze.size * maze.size,
         landmarkCount: landmarks.landmarks.length,

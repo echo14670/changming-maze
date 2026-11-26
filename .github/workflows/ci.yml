@@ -39,3 +39,6 @@ jobs:
 
       - name: Test render config contract
         run: npm run test:config
+
+      - name: Test maze seed determinism
+        run: npm run test:maze

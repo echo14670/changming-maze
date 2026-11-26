@@ -160,18 +160,31 @@
         }),
         doorPanelMaterial
       );
-      panel.castShadow = true;
+      // 门框已有阴影轮廓；双门扇不需要再各占一次阴影绘制。
+      panel.castShadow = false;
       pivot.add(panel);
 
+      const braces = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(panelWidth * 0.82, 0.06, 0.035),
+        iron,
+        4
+      );
+      braces.name = 'LighthouseDoorBraces';
+      const braceMatrix = new THREE.Matrix4();
       for (let band = 0; band < 4; band += 1) {
-        const brace = new THREE.Mesh(
-          new THREE.BoxGeometry(panelWidth * 0.82, 0.06, 0.035),
-          iron
-        );
-        brace.position.set(0, 0.4 + band * 0.6, 0.16);
-        pivot.add(brace);
+        braceMatrix.makeTranslation(0, 0.4 + band * 0.6, 0.16);
+        braces.setMatrixAt(band, braceMatrix);
       }
+      braces.instanceMatrix.needsUpdate = true;
+      pivot.add(braces);
       doorPivots.push({ pivot, side });
+    });
+
+    const windowMaterial = new THREE.MeshStandardMaterial({
+      color: 0x2a2825,
+      emissive: 0xe28a47,
+      emissiveIntensity: 0.1,
+      roughness: 0.32,
     });
 
     function addWindow(y, angle, scale) {
@@ -186,12 +199,7 @@
 
       const pane = new THREE.Mesh(
         new THREE.PlaneGeometry(0.62 * scale, 1.3 * scale),
-        new THREE.MeshStandardMaterial({
-          color: 0x2a2825,
-          emissive: 0xe28a47,
-          emissiveIntensity: 0.1,
-          roughness: 0.32
-        })
+        windowMaterial
       );
       pane.position.z = 0.035;
       windowGroup.add(pane);
@@ -212,10 +220,6 @@
       addWindow(baseY + 7.2, Math.PI * 0.64, 0.92),
       addWindow(baseY + 11.1, -Math.PI * 0.68, 0.78)
     ];
-    windowPanes.forEach(function (pane) {
-      pane.userData.noMerge = true;
-    });
-
     const galleryY = baseY + 19.15;
     const gallery = addMesh(
       new THREE.CylinderGeometry(3.45, 3.2, 0.28, 24, 1),
@@ -429,10 +433,10 @@
         );
         beam.rotation.y = time * 0.035;
         doorLamp.intensity = 0.9 + Math.sin(time * 3.7) * 0.08;
-        windowPanes.forEach(function (pane, index) {
-          pane.material.emissiveIntensity =
-            0.18 + beaconIntensity * 0.5 + Math.sin(time * 1.4 + index) * 0.03;
-        });
+        windowMaterial.emissiveIntensity =
+          0.18 +
+          beaconIntensity * 0.5 +
+          Math.sin(time * 1.4) * 0.03;
       }
     };
   }

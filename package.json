@@ -9,6 +9,8 @@
     "watch": "esbuild src/main.js --bundle --format=iife --outfile=dist/bundle.js --watch",
     "test": "node tests/smoke.cjs",
     "test:config": "node --test tests/config.test.mjs",
+    "test:maze": "node --test tests/maze-seed.test.mjs",
+    "measure:world": "node tools/measure-world.cjs",
     "capture:render-lab": "node tools/capture-render-comparisons.cjs",
     "capture:main-render": "node tools/capture-main-render.cjs"
   },

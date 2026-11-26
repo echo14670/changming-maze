@@ -127,7 +127,8 @@
       rocks.setMatrixAt(i, matrix);
     }
     rocks.instanceMatrix.needsUpdate = true;
-    rocks.castShadow = true;
+    // 礁石位于岛缘且大部分处于远景雾中，保留接收阴影即可。
+    rocks.castShadow = false;
     rocks.receiveShadow = true;
     group.add(rocks);
 
