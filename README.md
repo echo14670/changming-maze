@@ -68,7 +68,9 @@ npm install
 npm run build     # esbuild 打包到 dist/bundle.js
 npm run watch     # 开发时监听
 npm run test:config  # 渲染特性/画质组合的 Node 侧契约测试（CI 也跑）
+npm run test:maze    # 15×15 规格、同 seed 一致性、100 个 seed 可达性（CI 也跑）
 npm test          # Playwright 冒烟测试（先 build，Chrome + Edge）
+npm run measure:world  # B 场景网格、实例批次、材质与 draw call 统计
 npm run capture:main-render  # 主场景五组对比图 + Chrome/Edge 性能记录
 ```
 
@@ -95,6 +97,7 @@ npm run capture:main-render  # 主场景五组对比图 + Chrome/Edge 性能记�
 - [游戏方向方案与排期](docs/游戏方向方案与排期.md)
 - [第一周任务](docs/第一周任务.md)
 - [第二周方案](docs/第二周方案.md)
+- [王圣杰第二周交付](docs/world/王圣杰-第二周交付.md)
 - [黄勇杰第二周交付](docs/render/黄勇杰-第二周交付.md)
 - [接口文档](docs/接口文档.md)
 - [提交与协作说明](docs/提交与协作说明.md)

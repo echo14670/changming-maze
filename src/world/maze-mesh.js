@@ -78,7 +78,8 @@
         regionSegments.length
       );
       caps.name = 'MazeWallCaps-' + regionId;
-      caps.castShadow = true;
+      // 墙体主体已经产生完整轮廓阴影，墙帽不再重复进入阴影 Pass。
+      caps.castShadow = false;
       caps.receiveShadow = true;
       regionSegments.forEach(function (segment, index) {
         const horizontal = segment.axis === 'x';
@@ -127,6 +128,14 @@
     buildAtrium(THREE, materials, group);
     buildWaterChannels(THREE, maze, materials, random, group);
     buildOuterRuinRing(THREE, maze, materials, random, group);
+    const localMergeStats = Changming.mergeStaticMeshes
+      ? Changming.mergeStaticMeshes(THREE, group)
+      : {
+          inputMeshes: group.children.length,
+          outputMeshes: group.children.length,
+          removedCalls: 0,
+          materialGroupsMerged: 0
+        };
 
     return {
       group,
@@ -134,7 +143,20 @@
       wallMeshes,
       caps: capMeshes,
       bases,
-      wallCount: segments.length
+      wallCount: segments.length,
+      batching: {
+        strategy: 'region-instancing+local-static-merge',
+        wallBatches: Object.keys(wallMeshes),
+        capBatches: Object.keys(capMeshes),
+        floorBatches: regionIds.slice(),
+        drawObjects: group.children.length,
+        instancedMeshes: group.children.filter(function (child) {
+          return child.isInstancedMesh;
+        }).length,
+        localMergeInputMeshes: localMergeStats.inputMeshes,
+        localMergeOutputMeshes: localMergeStats.outputMeshes,
+        localMergeRemovedCalls: localMergeStats.removedCalls
+      }
     };
   }
 
@@ -203,6 +225,10 @@
   function buildAtrium(THREE, materials, group) {
     const atrium = config.atrium;
     const plazaSize = config.cellSize * 3;
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const position = new THREE.Vector3();
+    const scale = new THREE.Vector3();
     const plaza = new THREE.Mesh(
       new THREE.BoxGeometry(plazaSize, atrium.floorHeight, plazaSize),
       materials.floor.atrium
@@ -219,18 +245,33 @@
       metalness: 0.72
     });
     const trimGeometry = new THREE.BoxGeometry(plazaSize + 0.18, 0.08, 0.18);
-    [
+    const trimCount = 4;
+    const trims = new THREE.InstancedMesh(
+      trimGeometry,
+      trimMaterial,
+      trimCount
+    );
+    trims.name = 'AtriumEdgeTrim';
+    trims.userData.allowInstanceBake = true;
+    trims.receiveShadow = true;
+    const trimEdges = [
       { x: 0, z: -plazaSize / 2, rotation: 0 },
       { x: 0, z: plazaSize / 2, rotation: 0 },
       { x: -plazaSize / 2, z: 0, rotation: Math.PI / 2 },
       { x: plazaSize / 2, z: 0, rotation: Math.PI / 2 }
-    ].forEach(function (edge) {
-      const trim = new THREE.Mesh(trimGeometry, trimMaterial);
-      trim.position.set(edge.x, atrium.floorHeight + 0.045, edge.z);
-      trim.rotation.y = edge.rotation;
-      trim.receiveShadow = true;
-      group.add(trim);
+    ];
+    trimEdges.forEach(function (edge, index) {
+      position.set(edge.x, atrium.floorHeight + 0.045, edge.z);
+      quaternion.setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        edge.rotation
+      );
+      scale.set(1, 1, 1);
+      matrix.compose(position, quaternion, scale);
+      trims.setMatrixAt(index, matrix);
     });
+    trims.instanceMatrix.needsUpdate = true;
+    group.add(trims);
 
     const mosaic = new THREE.Mesh(
       new THREE.RingGeometry(3.9, 5.62, 64, 1),
@@ -245,54 +286,78 @@
     mosaic.position.y = atrium.floorHeight + 0.012;
     group.add(mosaic);
 
+    const rayGeometry = new THREE.BoxGeometry(0.075, 0.018, 1.25);
+    const rays = new THREE.InstancedMesh(rayGeometry, materials.gold, 16);
+    rays.name = 'AtriumCompassRays';
+    rays.userData.allowInstanceBake = true;
     for (let i = 0; i < 16; i += 1) {
       const angle = (i / 16) * Math.PI * 2;
-      const ray = new THREE.Mesh(
-        new THREE.BoxGeometry(0.075, 0.018, 1.25),
-        materials.gold
-      );
-      ray.position.set(
+      position.set(
         Math.sin(angle) * 4.72,
         atrium.floorHeight + 0.025,
         Math.cos(angle) * 4.72
       );
-      ray.rotation.y = angle;
-      group.add(ray);
+      quaternion.setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        angle
+      );
+      scale.set(1, 1, 1);
+      matrix.compose(position, quaternion, scale);
+      rays.setMatrixAt(i, matrix);
     }
+    rays.instanceMatrix.needsUpdate = true;
+    group.add(rays);
 
     const stepCount = atrium.stepCount;
     const stepWidth = 5.8;
     const stepDepth = atrium.approachDepth / stepCount;
+    const steps = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(stepWidth, 1, stepDepth + 0.035),
+      materials.floor.atrium,
+      stepCount
+    );
+    steps.name = 'AtriumSouthSteps';
+    steps.userData.allowInstanceBake = true;
+    steps.castShadow = true;
+    steps.receiveShadow = true;
     for (let i = 0; i < stepCount; i += 1) {
       const height = ((i + 1) / stepCount) * atrium.floorHeight;
-      const step = new THREE.Mesh(
-        new THREE.BoxGeometry(stepWidth, height, stepDepth + 0.035),
-        materials.floor.atrium
-      );
-      step.name = 'AtriumSouthStep' + (i + 1);
-      step.position.set(
+      position.set(
         0,
         height / 2,
         plazaSize / 2 + (stepCount - i - 0.5) * stepDepth
       );
-      step.castShadow = true;
-      step.receiveShadow = true;
-      group.add(step);
+      quaternion.identity();
+      scale.set(1, height, 1);
+      matrix.compose(position, quaternion, scale);
+      steps.setMatrixAt(i, matrix);
     }
+    steps.instanceMatrix.needsUpdate = true;
+    group.add(steps);
 
+    const rails = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(0.14, 0.62, atrium.approachDepth + 0.5),
+      trimMaterial,
+      2
+    );
+    rails.name = 'AtriumStepRails';
+    rails.userData.allowInstanceBake = true;
+    const railQuaternion = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(-0.26, 0, 0)
+    );
+    let railIndex = 0;
     for (let side = -1; side <= 1; side += 2) {
-      const sideRail = new THREE.Mesh(
-        new THREE.BoxGeometry(0.14, 0.62, atrium.approachDepth + 0.5),
-        trimMaterial
-      );
-      sideRail.position.set(
+      position.set(
         side * 3.1,
         0.3,
         plazaSize / 2 + atrium.approachDepth / 2
       );
-      sideRail.rotation.x = -0.26;
-      group.add(sideRail);
+      scale.set(1, 1, 1);
+      matrix.compose(position, railQuaternion, scale);
+      rails.setMatrixAt(railIndex++, matrix);
     }
+    rails.instanceMatrix.needsUpdate = true;
+    group.add(rails);
   }
 
   function buildWaterChannels(THREE, maze, materials, random, group) {
@@ -371,7 +436,7 @@
       Math.max(1, channels.length * 3)
     );
     reeds.name = 'WaterCourtReeds';
-    reeds.castShadow = true;
+    reeds.castShadow = false;
     let index = 0;
     channels.forEach(function (cell) {
       const world = helpers.cellToWorld(cell.row, cell.col);

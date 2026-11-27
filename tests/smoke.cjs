@@ -71,6 +71,18 @@ await page.evaluate(() => {
     assert(state.seed === 20261205, 'seed 未从 URL 读取')
     assert(diagnostics.features.lantern === true, '玩家灯笼未注册为 feature')
 
+    const worldBatchStats = await page.evaluate(() => window.__changming.world.stats)
+    const mazeBatching = await page.evaluate(() => window.__changming.world.mazeGeometry.batching)
+    assert(worldBatchStats.mazeMeshCount <= 40, `迷宫绘制对象过多：${worldBatchStats.mazeMeshCount}`)
+    assert(mazeBatching.drawObjects <= 40, `buildMazeMesh 绘制对象过多：${mazeBatching.drawObjects}`)
+    assert(mazeBatching.localMergeRemovedCalls > 0, 'buildMazeMesh 没有产生局部静态合批')
+    assert(worldBatchStats.instancedMeshCount >= 15, '迷宫实例化批次数量异常')
+    assert(worldBatchStats.meshCount <= 60, `世界网格节点过多：${worldBatchStats.meshCount}`)
+    assert(
+      worldBatchStats.staticBatchInputMeshes > worldBatchStats.staticBatchOutputMeshes,
+      '静态合批没有减少 Mesh 数量',
+    )
+
     const pipelineDiagnostics = await page.evaluate(() => window.changming.getPipelineDiagnostics())
     assert(pipelineDiagnostics, '缺少渲染管线诊断 getPipelineDiagnostics()')
     assert(pipelineDiagnostics.quality === 'high', '渲染管线画质不是 high')
@@ -235,6 +247,14 @@ await page.evaluate(() => {
       await sample('high')
       return { viewport: '1440x900', renderer: 'headless swiftshader', high, low }
     })
+    assert(
+      performance.high.drawCalls <= 150,
+      `高画质稳定帧 draw call 超过 150：${performance.high.drawCalls}`,
+    )
+    assert(
+      performance.low.drawCalls <= 90,
+      `低画质稳定帧 draw call 超过 90：${performance.low.drawCalls}`,
+    )
 
     const finalState = await page.evaluate(() => window.changming.getState())
     return {
@@ -248,6 +268,8 @@ await page.evaluate(() => {
       },
       audio: audioAfterDoor,
       lantern,
+      worldBatchStats,
+      mazeBatching,
       performance,
       errors,
     }

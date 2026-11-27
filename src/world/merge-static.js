@@ -9,7 +9,8 @@
     const candidates = [];
 
     root.traverse(function (object) {
-      if (!object.isMesh || object.isInstancedMesh || object.isSkinnedMesh) return;
+      if (!object.isMesh || object.isSkinnedMesh) return;
+      if (object.isInstancedMesh && !object.userData.allowInstanceBake) return;
       if (object.userData.noMerge || isBelowNoMerge(object, root)) return;
       if (!object.geometry || Array.isArray(object.material)) return;
       if (!object.material || object.material.transparent) return;
@@ -29,8 +30,6 @@
       const attributes = mesh.geometry.attributes;
       const signature = [
         mesh.material.uuid,
-        mesh.castShadow ? 1 : 0,
-        mesh.receiveShadow ? 1 : 0,
         mesh.renderOrder || 0,
         attributes.normal ? 1 : 0,
         attributes.uv ? 1 : 0,
@@ -44,6 +43,7 @@
 
     let before = 0;
     let after = 0;
+    let materialGroupsMerged = 0;
     buckets.forEach(function (meshes) {
       before += meshes.length;
       if (meshes.length < 2) {
@@ -56,12 +56,14 @@
         return;
       }
       after += 1;
+      materialGroupsMerged += 1;
     });
 
     return {
       inputMeshes: before,
       outputMeshes: after,
-      removedCalls: Math.max(0, before - after)
+      removedCalls: Math.max(0, before - after),
+      materialGroupsMerged
     };
   }
 
@@ -77,23 +79,32 @@
   function mergeBucket(THREE, root, rootInverse, meshes) {
     const transformed = [];
     let positionCount = 0;
+    const instanceMatrix = new THREE.Matrix4();
+    const instanceWorld = new THREE.Matrix4();
     for (let i = 0; i < meshes.length; i += 1) {
       const mesh = meshes[i];
       mesh.updateWorldMatrix(true, false);
-      let geometry = mesh.geometry.clone();
-      if (geometry.index) {
-        const nonIndexed = geometry.toNonIndexed();
-        geometry.dispose();
-        geometry = nonIndexed;
+      const instanceCount = mesh.isInstancedMesh ? mesh.count : 1;
+      for (let instanceIndex = 0; instanceIndex < instanceCount; instanceIndex += 1) {
+        let geometry = mesh.geometry.clone();
+        if (geometry.index) {
+          const nonIndexed = geometry.toNonIndexed();
+          geometry.dispose();
+          geometry = nonIndexed;
+        }
+        if (!geometry.attributes.normal) geometry.computeVertexNormals();
+        const matrix = new THREE.Matrix4();
+        if (mesh.isInstancedMesh) {
+          mesh.getMatrixAt(instanceIndex, instanceMatrix);
+          instanceWorld.multiplyMatrices(mesh.matrixWorld, instanceMatrix);
+          matrix.multiplyMatrices(rootInverse, instanceWorld);
+        } else {
+          matrix.multiplyMatrices(rootInverse, mesh.matrixWorld);
+        }
+        geometry.applyMatrix4(matrix);
+        transformed.push(geometry);
+        positionCount += geometry.attributes.position.count;
       }
-      if (!geometry.attributes.normal) geometry.computeVertexNormals();
-      const matrix = new THREE.Matrix4().multiplyMatrices(
-        rootInverse,
-        mesh.matrixWorld
-      );
-      geometry.applyMatrix4(matrix);
-      transformed.push(geometry);
-      positionCount += geometry.attributes.position.count;
     }
 
     if (!positionCount) return null;
@@ -159,8 +170,12 @@
     const first = meshes[0];
     const mergedMesh = new THREE.Mesh(mergedGeometry, first.material);
     mergedMesh.name = 'StaticBatch-' + (first.material.name || first.material.uuid);
-    mergedMesh.castShadow = first.castShadow;
-    mergedMesh.receiveShadow = first.receiveShadow;
+    mergedMesh.castShadow = meshes.some(function (mesh) {
+      return mesh.castShadow;
+    });
+    mergedMesh.receiveShadow = meshes.some(function (mesh) {
+      return mesh.receiveShadow;
+    });
     mergedMesh.renderOrder = first.renderOrder;
     mergedMesh.userData.staticBatch = true;
     root.add(mergedMesh);

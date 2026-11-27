@@ -51,6 +51,15 @@ export function createMaze(options = {}) {
   return getNamespace().MazeGenerator.generate(options)
 }
 
+export function createMazeMaterials(options = {}) {
+  globalThis.THREE = THREE
+  const namespace = getNamespace()
+  return namespace.WorldMaterials.create(THREE, {
+    seed: options.seed,
+    renderer: options.renderer,
+  })
+}
+
 export function createWorldAtmosphere(scene, renderer, options = {}) {
   globalThis.THREE = THREE
   const namespace = getNamespace()
@@ -61,8 +70,8 @@ export function createWorldAtmosphere(scene, renderer, options = {}) {
 }
 
 export function buildMazeMesh(options) {
-  if (!options?.maze || !options?.materials || !options?.group) {
-    throw new Error('buildMazeMesh: maze, materials and group are required')
+  if (!options?.maze || !options?.materials) {
+    throw new Error('buildMazeMesh: maze and materials are required')
   }
   return getNamespace().buildMazeGeometry(
     THREE,

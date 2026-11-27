@@ -209,6 +209,8 @@
       });
     });
 
+    const flameBatch = batchBrazierFlames(THREE, materials, group, braziers);
+
     maze.spawnPoints.forEach(function (spawn, index) {
       const cradle = createEmberCradle(THREE, materials);
       cradle.position.set(spawn.position.x, 0.02, spawn.position.z);
@@ -230,25 +232,71 @@
       landmarks,
       props,
       braziers,
+      flameBatch,
       spawnAnchors,
       torchLights,
       update: function update(time, delta) {
         elapsed += delta || 0;
+        const matrix = new THREE.Matrix4();
+        const position = new THREE.Vector3();
+        const quaternion = new THREE.Quaternion();
+        const scale = new THREE.Vector3();
         braziers.forEach(function (brazier, index) {
           const flicker =
             0.82 +
             Math.sin(time * 7.2 + index * 1.73) * 0.11 +
             Math.sin(time * 13.3 + index) * 0.055;
           brazier.light.intensity = brazier.baseIntensity * flicker;
-          brazier.flame.scale.set(
-            1 + Math.sin(time * 5.7 + index) * 0.08,
-            flicker,
-            1 + Math.cos(time * 4.9 + index) * 0.08
+          position.copy(brazier.flameBasePosition);
+          quaternion.setFromAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            time * 0.8 + index
           );
-          brazier.flame.rotation.y = time * 0.8 + index;
+          scale.set(
+            brazier.flameBaseScale.x *
+              (1 + Math.sin(time * 5.7 + index) * 0.08),
+            brazier.flameBaseScale.y * flicker,
+            brazier.flameBaseScale.z *
+              (1 + Math.cos(time * 4.9 + index) * 0.08)
+          );
+          matrix.compose(position, quaternion, scale);
+          flameBatch.setMatrixAt(index, matrix);
         });
+        flameBatch.instanceMatrix.needsUpdate = true;
       }
     };
+  }
+
+  function batchBrazierFlames(THREE, materials, parent, braziers) {
+    const geometry = new THREE.ConeGeometry(1, 1, 10);
+    const flames = new THREE.InstancedMesh(
+      geometry,
+      materials.ember,
+      braziers.length
+    );
+    flames.name = 'BrazierFlames';
+    flames.frustumCulled = false;
+    flames.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const matrix = new THREE.Matrix4();
+    const quaternion = new THREE.Quaternion();
+    const position = new THREE.Vector3();
+    const scale = new THREE.Vector3();
+
+    braziers.forEach(function (brazier, index) {
+      brazier.group.updateWorldMatrix(true, true);
+      brazier.flame.getWorldPosition(position);
+      scale.set(1, 1, 1);
+      brazier.flame.getWorldScale(scale);
+      matrix.compose(position, quaternion, scale);
+      flames.setMatrixAt(index, matrix);
+      brazier.flameBasePosition = position.clone();
+      brazier.flameBaseScale = scale.clone();
+      brazier.flame.parent?.remove(brazier.flame);
+      brazier.flame = null;
+    });
+    flames.instanceMatrix.needsUpdate = true;
+    parent.add(flames);
+    return flames;
   }
 
   function placeAtCell(object, row, col, dx, dz, y) {
@@ -533,16 +581,11 @@
     const texture = makeSignTexture(THREE, regionId);
     const faceMaterial = new THREE.MeshBasicMaterial({
       map: texture,
-      side: THREE.DoubleSide,
-      transparent: true
+      side: THREE.DoubleSide
     });
     const face = new THREE.Mesh(new THREE.PlaneGeometry(1.38, 0.66), faceMaterial);
     face.position.set(0, 1.84, 0.056);
     group.add(face);
-    const back = face.clone();
-    back.rotation.y = Math.PI;
-    back.position.z = -0.056;
-    group.add(back);
     return { group, texture };
   }
 
