@@ -9,11 +9,14 @@ import { createRenderPipeline } from './render/pipeline.js'
 import { RENDER_FEATURE_NAMES } from './render/config.js'
 import { createFireSeeds } from './game/fire-seeds.js'
 import { createInteraction } from './game/interaction.js'
+import { createRespawn } from './game/respawn.js'
 import { createHud } from './ui/hud.js'
+import { createMinimap } from './ui/minimap.js'
+import { createTitleScreen } from './ui/title-screen.js'
 import { AudioManager } from './audio/AudioManager.js'
-
 const audioManager = new AudioManager()
 
+// 在任何地方监听第一次点击
 document.addEventListener('pointerdown', () => {
   audioManager.init()
 }, { once: true })
@@ -34,6 +37,10 @@ function readQualityParam(params) {
   return value === 'high' || value === 'medium' || value === 'low' ? value : 'high'
 }
 
+/**
+ * URL 覆盖特性默认值，例如 ?water=1&bloom=0。
+ * 供答辩现场切换和 Playwright 回归使用，不改 UI。
+ */
 function readFeatureOverrides(params) {
   const overrides = {}
   RENDER_FEATURE_NAMES.forEach((name) => {
@@ -62,7 +69,8 @@ try {
   const atmosphere = createWorldAtmosphere(renderer.scene, renderer.renderer, {
     seed,
   })
-  
+  // atmosphere-legacy 只保留夜空/星/月/雾，光照全部交给 render 管线，
+  // 避免旧半球光/平行光/区域点光与新管线重复叠加（双份光源、双份阴影）。
   atmosphere.group.children
     .filter((child) => child.isLight)
     .forEach((light) => {
@@ -89,6 +97,8 @@ try {
   })
   cameraRig.setLook(0, -0.035)
 
+  // 黄勇杰的渲染管线接管主场景：三光源、阴影、体积光、Gerstner 水面、
+  // Bloom/ACES、PBR/Blinn 特性开关。旧玩家灯笼由管线 lantern 替换。
   const pipeline = createRenderPipeline({
     scene: renderer.scene,
     camera: renderer.camera,
@@ -104,12 +114,14 @@ try {
       horizonColor: 0x547a81,
     },
     onFeatureChange(name, enabled) {
+      // water 打开时隐藏 B 的整片海面 shader，避免两层海面叠加。
       if (name === 'water' && world.ocean?.mesh) {
         world.ocean.mesh.visible = !enabled
       }
     },
   })
 
+  // 兼容旧诊断/测试接口：playerLantern 现在指向管线里的同一盏 SpotLight。
   const playerLantern = {
     getLight: () => pipeline.lighting.lantern,
     setEnabled: (enabled) => pipeline.setFeature('lantern', enabled),
@@ -122,6 +134,7 @@ try {
     scene: renderer.scene,
     world,
   })
+  // 火种在管线之后创建，补一次材质登记，保证 pbr / Blinn 切换覆盖到它们。
   pipeline.lightingModel.refresh()
   const interaction = createInteraction({
     camera: renderer.camera,
@@ -134,11 +147,37 @@ try {
     hud,
   })
 
-  state.phase = 'playing'
+  // 张洋玩法/UI：小地图迷雾、R 检查点/落水重生、标题开始界面。
+  const minimap = createMinimap({ state, world, cameraRig, fireSeeds })
+  const respawn = createRespawn({
+    state,
+    input,
+    world,
+    cameraRig,
+    hud,
+    events,
+  })
+
   state.checkpoint = {
     col: world.entrance.cell.col,
     row: world.entrance.cell.row,
   }
+  // 标题界面：title → playing 由开始按钮触发，不再临时强制 playing。
+  const titleScreen = createTitleScreen({
+    state,
+    events,
+    audio: audioManager,
+    input,
+    cameraRig,
+    hud,
+  })
+
+  // 结局入口预留：ending:start 后锁定输入，HUD 淡出（正式镜头第三周接入）。
+  events.on('ending:start', () => {
+    input.setEnabled(false)
+    cameraRig.setEnabled(false)
+    document.body.dataset.phase = 'ending'
+  })
 
   const diagnostics = createDiagnostics({
     state,
@@ -151,9 +190,11 @@ try {
     pipeline,
   })
 
+  // createDiagnostics 会覆盖 window.changming，音频必须在它之后挂载
   window.changming.audio = audioManager
   window.changming.pipeline = pipeline
 
+  // 后处理接管每帧渲染；画质切档时同步管线参数与后处理尺寸。
   renderer.setRenderCallback((dt) => pipeline.render(dt))
   renderer.onQualityChange((quality) => {
     pipeline.setQuality(quality)
@@ -167,42 +208,28 @@ try {
 
   let elapsed = 0
   let activeRegion = ''
-  let stepAccumulator = 0 // 【脚步声计时器】
-
   renderer.start((dt) => {
     elapsed += dt
-    cameraRig.update(dt)
+    if (state.phase === 'playing') {
+      cameraRig.update(dt)
+      interaction.update(dt)
+      respawn.update(dt)
+
+      const position = cameraRig.getPosition()
+      const regionName = world.getRegionAt(position.x, position.z).name
+      if (regionName !== activeRegion) {
+        activeRegion = regionName
+        hud.setRegion(regionName)
+      }
+    }
     playerLantern.update(dt)
     fireSeeds.update(dt, elapsed)
-    interaction.update(dt)
     world.update(elapsed, dt)
     pipeline.update(dt)
-
-    // 【脚步声逻辑】
-    const isMoving = 
-      input.isDown('KeyW') || 
-      input.isDown('KeyA') || 
-      input.isDown('KeyS') || 
-      input.isDown('KeyD')
-    
-    if (isMoving) {
-      stepAccumulator += dt
-      if (stepAccumulator > 0.45) { 
-        audioManager.playStep()
-        stepAccumulator = 0
-      }
-    } else {
-      stepAccumulator = 0
-    }
-
-    const position = cameraRig.getPosition()
-    const regionName = world.getRegionAt(position.x, position.z).name
-    if (regionName !== activeRegion) {
-      activeRegion = regionName
-      hud.setRegion(regionName)
-    }
+    minimap.update(dt)
   })
 
+  // 方便控制台排查；正式模块接入后可以删。
   window.__changming = {
     renderer,
     input,
@@ -213,6 +240,9 @@ try {
     pipeline,
     fireSeeds,
     interaction,
+    respawn,
+    minimap,
+    titleScreen,
     hud,
     events,
     state,

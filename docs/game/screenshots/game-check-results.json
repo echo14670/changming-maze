@@ -1,0 +1,59 @@
+{
+  "trail": [
+    0,
+    9,
+    15,
+    21,
+    30
+  ],
+  "results": {
+    "标题期输入锁定": {
+      "ok": true,
+      "detail": "moved=0"
+    },
+    "title → playing": {
+      "ok": true,
+      "detail": "playing"
+    },
+    "迷雾揭示 12,7": {
+      "ok": true,
+      "detail": "0 → 9"
+    },
+    "迷雾揭示 10,7": {
+      "ok": true,
+      "detail": "9 → 15"
+    },
+    "迷雾揭示 8,7": {
+      "ok": true,
+      "detail": "15 → 21"
+    },
+    "迷雾揭示 12,3": {
+      "ok": true,
+      "detail": "21 → 30"
+    },
+    "R 回检查点": {
+      "ok": true,
+      "detail": "{\"count\":1,\"safe\":{\"x\":0,\"z\":41.2},\"pos\":{\"x\":0,\"y\":1.62,\"z\":41.2}}"
+    },
+    "找到不可行走坐标": {
+      "ok": true,
+      "detail": "{\"x\":-8,\"z\":-16,\"row\":3,\"col\":5}"
+    },
+    "卡墙自动重生到可行走点": {
+      "ok": true,
+      "detail": "{\"count\":2,\"walkable\":true,\"reason\":2}"
+    },
+    "窄屏 700 布局": {
+      "ok": true,
+      "detail": "{\"overflow\":false,\"overlapPrompt\":false,\"overlapObjective\":false,\"overlapRegion\":false,\"overlapTop\":false}"
+    },
+    "窄屏 390 布局": {
+      "ok": true,
+      "detail": "{\"overflow\":false,\"overlapPrompt\":false,\"overlapObjective\":false,\"overlapRegion\":false,\"overlapTop\":false}"
+    },
+    "控制台零 error": {
+      "ok": true,
+      "detail": ""
+    }
+  }
+}

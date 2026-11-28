@@ -1,8 +1,176 @@
 :root {
-  --hud-ink: #ece4d4;
-  --hud-muted: #899693;
-  --hud-ember: #ffb45c;
-  --hud-line: rgba(236, 228, 212, 0.18);
+  /* UI 色板 */
+  --night: #0b1a24;
+  --ember: #ffb45c;
+  --fog: #9fb0b5;
+  --reef: #2a363b;
+
+  /* 状态色 */
+  --ember-glow: rgba(255, 180, 92, 0.4);
+  --ui-bg: rgba(11, 26, 36, 0.85);
+  --ui-border: rgba(159, 176, 181, 0.3);
+
+  /* HUD 专用色（与色板统一） */
+  --hud-ink: #e8e0cf;
+  --hud-ember: var(--ember);
+  --hud-muted: #8a9794;
+  --hud-line: rgba(159, 176, 181, 0.28);
+
+  /* 字体 */
+  --font-ui: "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-title: Georgia, "Songti SC", "SimSun", serif;
+}
+
+#hud.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body[data-phase="ending"] #hud {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+/* ---------- 标题 / 开始界面 ---------- */
+
+#title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 180, 92, 0.1), transparent 52%),
+    linear-gradient(180deg, rgba(7, 19, 26, 0.94), rgba(5, 12, 17, 0.97));
+  color: var(--fog);
+  font-family: var(--font-ui);
+  /* 遮罩不拦截指针：点击直接落到 canvas，由文档级监听开始游戏，
+     也保证回归脚本能点到 canvas。 */
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+#title-screen.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.title-panel {
+  max-width: 560px;
+  text-align: center;
+}
+
+.title-eyebrow {
+  margin: 0 0 18px;
+  color: var(--hud-muted);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+}
+
+.title-brand {
+  margin: 0;
+  color: #f6e7c8;
+  font-family: var(--font-title);
+  font-size: clamp(44px, 8vw, 72px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-shadow: 0 0 26px rgba(255, 180, 92, 0.28);
+}
+
+.title-subtitle {
+  margin: 10px 0 0;
+  color: var(--hud-ember);
+  font-size: 12px;
+  letter-spacing: 0.34em;
+}
+
+.title-story {
+  margin: 22px 0 28px;
+  font-size: 12px;
+  line-height: 2;
+  letter-spacing: 0.1em;
+}
+
+#title-start {
+  min-width: 176px;
+  padding: 12px 34px;
+  border: 1px solid rgba(255, 180, 92, 0.68);
+  background: rgba(255, 180, 92, 0.08);
+  color: var(--hud-ember);
+  font-family: var(--font-title);
+  font-size: 16px;
+  letter-spacing: 0.24em;
+  cursor: pointer;
+  transition: background 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+#title-start:hover {
+  background: rgba(255, 180, 92, 0.18);
+  box-shadow: 0 0 24px rgba(255, 180, 92, 0.3);
+  transform: translateY(-1px);
+}
+
+.title-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+  margin: 30px 0 10px;
+  padding: 0;
+  color: #697875;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  list-style: none;
+}
+
+.title-controls kbd {
+  display: inline-grid;
+  min-width: 22px;
+  height: 20px;
+  place-items: center;
+  margin-right: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--hud-line);
+  background: rgba(6, 13, 15, 0.7);
+  color: #cec6b7;
+  font: 9px Consolas, monospace;
+}
+
+.title-hint {
+  margin: 0;
+  color: rgba(138, 151, 148, 0.7);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+/* ---------- 小地图 + 迷雾 ---------- */
+
+#minimap {
+  position: absolute;
+  bottom: 52px;
+  left: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--hud-line);
+  background: rgba(4, 10, 13, 0.6);
+}
+
+#minimap canvas {
+  display: block;
+  width: 168px;
+  height: 168px;
+}
+
+.minimap-label {
+  color: var(--hud-muted);
+  font-size: 8px;
+  letter-spacing: 0.24em;
+  text-align: center;
 }
 
 #hud {
@@ -299,9 +467,33 @@
     display: none;
   }
 
+  /* 窄屏：区域名移到右侧目标卡下方，避免与火种卡片重叠 */
   .hud-region {
+    top: 100px;
+    right: 26px;
     left: auto;
-    right: 130px;
     transform: none;
+  }
+
+  /* 小地图挪到左上品牌下方，不再和底部交互提示抢位置 */
+  #minimap {
+    top: 74px;
+    bottom: auto;
+    left: 14px;
+    padding: 6px;
+  }
+
+  #minimap canvas {
+    width: 112px;
+    height: 112px;
+  }
+
+  #interaction-prompt {
+    min-width: 0;
+    max-width: 92vw;
+  }
+
+  .title-controls {
+    gap: 6px 10px;
   }
 }

@@ -62,6 +62,15 @@ export function createHud(options) {
     if (region && name) region.textContent = name
   }
 
+  function show() {
+    root?.classList.remove('is-hidden')
+  }
+
+  function hide() {
+    root?.classList.add('is-hidden')
+    setInteraction(null)
+  }
+
   const offCollect = events?.on('seed:collect', (payload) => {
     setCount(payload.collected, payload.total)
   })
@@ -72,33 +81,15 @@ export function createHud(options) {
 
   setCount(state.collected, 3)
   setGuide('找到三枚火种，靠近后按 E 拾取')
-  // ====== 音频 UI 绑定 ======
-  const muteBtn = document.querySelector('#mute-btn')
-  const volSlider = document.querySelector('#vol-slider')
-  
-  if (muteBtn) {
-    muteBtn.addEventListener('click', () => {
-      const audio = window.changming?.audio
-      if (!audio) return
-      audio.setMute(!audio.isMuted)
-      muteBtn.textContent = audio.isMuted ? '🔇 静音' : '🔊 音量'
-      muteBtn.style.color = audio.isMuted ? 'var(--hud-muted)' : 'var(--hud-ember)'
-    })
-  }
 
-  if (volSlider) {
-    volSlider.addEventListener('input', (e) => {
-      const audio = window.changming?.audio
-      if (audio) audio.setVolume(parseFloat(e.target.value))
-    })
-  }
-  // ==========================
   return {
     setCount,
     setInteraction,
     setGuide,
     showToast,
     setRegion,
+    show,
+    hide,
     dispose() {
       offCollect?.()
       offGate?.()
