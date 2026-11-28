@@ -12,6 +12,7 @@
     "test:maze": "node --test tests/maze-seed.test.mjs",
     "test:game": "node tools/check-game-ui.cjs",
     "measure:world": "node tools/measure-world.cjs",
+    "capture:regions": "node tools/capture-region-shots.cjs",
     "capture:render-lab": "node tools/capture-render-comparisons.cjs",
     "capture:main-render": "node tools/capture-main-render.cjs",
     "capture:game-ui": "node tools/capture-game-ui.cjs"

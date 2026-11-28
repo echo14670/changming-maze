@@ -106,6 +106,8 @@ PBR↔Blinn 特性开关）。
 - [王圣杰第二周交付](docs/world/王圣杰-第二周交付.md)
 - [黄勇杰第二周交付](docs/render/黄勇杰-第二周交付.md)
 - [张洋第二周交付](docs/game/张洋-第二周交付.md)
+- [四区域截图](docs/world/screenshots/)
+- [v0.5.0 发布说明](docs/发布说明-v0.5.0.md)
 - [接口文档](docs/接口文档.md)
 - [提交与协作说明](docs/提交与协作说明.md)
 - [开源模型渲染方案](docs/开源模型渲染方案.md)
