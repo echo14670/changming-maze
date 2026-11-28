@@ -20,6 +20,57 @@
     texture.needsUpdate = true;
     return texture;
   }
+    // 从 Canvas 像素计算 Normal Map
+  function makeNormalMap(THREE, canvas) {
+    const width = canvas.width;
+    const height = canvas.height;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    const normalCanvas = document.createElement('canvas');
+    normalCanvas.width = width;
+    normalCanvas.height = height;
+    const normalCtx = normalCanvas.getContext('2d');
+    const normalData = normalCtx.createImageData(width, height);
+    const nd = normalData.data;
+
+    const getHeight = (x, y) => {
+      x = (x + width) % width;
+      y = (y + height) % height;
+      const idx = (y * width + x) * 4;
+      return (data[idx] + data[idx+1] + data[idx+2]) / 3.0 / 255.0;
+    };
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const left = getHeight(x - 1, y);
+        const right = getHeight(x + 1, y);
+        const top = getHeight(x, y - 1);
+        const bottom = getHeight(x, y + 1);
+
+        const dx = (right - left) * 2.0;
+        const dy = (bottom - top) * 2.0;
+        const dz = 1.0;
+        const len = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+        const idx = (y * width + x) * 4;
+        nd[idx] = (dx / len * 0.5 + 0.5) * 255;
+        nd[idx+1] = (dy / len * 0.5 + 0.5) * 255;
+        nd[idx+2] = (dz / len * 0.5 + 0.5) * 255;
+        nd[idx+3] = 255;
+      }
+    }
+    normalCtx.putImageData(normalData, 0, 0);
+
+    const texture = new THREE.CanvasTexture(normalCanvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    // 必须确保法线贴图不被当作颜色数据转换
+    texture.colorSpace = THREE.NoColorSpace; 
+    texture.anisotropy = 8;
+    return texture;
+  }
 
   function speckle(context, size, random, count, colors, maxRadius) {
     for (let i = 0; i < count; i += 1) {

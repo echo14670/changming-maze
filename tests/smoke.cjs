@@ -223,6 +223,37 @@ await page.evaluate(() => {
     const audioAfterDoor = await page.evaluate(() => window.__audioCalls)
     assert(audioAfterDoor.door >= 1, '开门音效没有触发')
 
+    // ==========================================
+    // 【E区专属】自动截取测试图
+    // ==========================================
+    console.log('📸 正在截取区域截图...')
+    const regions = [
+      { name: '01-outer-court', pos: [0, 1.62, 35] },     // 外庭
+      { name: '02-water-court', pos: [10, 1.62, 10] },    // 水院
+      { name: '03-ember-hall', pos: [-15, 1.62, -15] },   // 烬厅
+      { name: '04-atrium', pos: [0, 1.62, 6] }            // 中庭（灯塔大门）
+    ]
+
+    for (const region of regions) {
+      await page.evaluate((p) => window.changming.teleport(p), region.pos)
+      await page.waitForTimeout(500)
+      await page.screenshot({ path: path.join(SHOT_DIR, `${region.name}.png`) })
+    }
+
+    console.log('📸 正在截取画质对比图...')
+    await page.evaluate(() => window.changming.setQuality('high'))
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: path.join(SHOT_DIR, 'quality-high.png') })
+
+    await page.evaluate(() => window.changming.setQuality('low'))
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: path.join(SHOT_DIR, 'quality-low.png') })
+    
+    // 恢复高画质
+    await page.evaluate(() => window.changming.setQuality('high'))
+    await page.waitForTimeout(300)
+    // ==========================================
+
     await page.screenshot({ path: path.join(SHOT_DIR, `engine-smoke-${config.name.toLowerCase()}.png`) })
     assert(errors.length === 0, '控制台存在错误：' + errors.join(' | '))
 
@@ -231,7 +262,6 @@ await page.evaluate(() => {
       const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
       const sample = async (quality) => {
         window.changming.setQuality(quality)
-        // 切档会重建阴影贴图/水面几何并重编译材质，等 3 秒让 FPS 窗口稳定。
         await wait(3000)
         const current = window.changming.getDiagnostics()
         return {
